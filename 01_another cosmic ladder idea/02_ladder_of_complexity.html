@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ladder of Complexity</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+:root{
+  --bg:#040608;--panel:rgba(4,7,12,0.94);--border:rgba(140,180,240,0.1);
+  --text:#a8b8d0;--bright:#dce8ff;--muted:#3a4858;
+  --serif:'Playfair Display',serif;--mono:'IBM Plex Mono',monospace;
+  --physics:#4a8fff;--chemistry:#30c8c0;--stellar:#ffaa44;
+  --life:#44cc70;--cognition:#cc80ff;--tech:#e8e8ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);overflow:hidden;width:100vw;height:100vh;cursor:grab;}
+body.grabbing{cursor:grabbing;}
+#c{display:block;width:100vw;height:100vh;}
+#header{position:fixed;top:0;left:0;right:0;z-index:30;padding:16px 22px 12px;pointer-events:none;background:linear-gradient(to bottom,rgba(4,6,8,.98) 0%,transparent 100%);}
+#header h1{font-family:var(--serif);font-weight:400;font-size:19px;color:var(--bright);}
+#header .sub{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+#cat-legend{position:fixed;top:68px;left:20px;z-index:30;background:var(--panel);border:1px solid var(--border);border-radius:2px;padding:12px 14px;backdrop-filter:blur(8px);}
+.cat-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;cursor:pointer;transition:opacity .2s;user-select:none;}
+.cat-row:last-child{margin-bottom:0;}.cat-row.hidden{opacity:.3;}
+.cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cat-name{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);}
+.cat-count{font-size:8px;color:var(--muted);margin-left:auto;padding-left:8px;}
+#inspector{position:fixed;top:68px;right:20px;z-index:30;width:274px;background:var(--panel);border:1px solid var(--border);border-radius:2px;padding:16px 18px;backdrop-filter:blur(10px);}
+#inspector.empty{opacity:.45;pointer-events:none;}
+#insp-cat{font-size:8px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px;}
+#insp-name{font-family:var(--serif);font-size:19px;color:var(--bright);line-height:1.2;margin-bottom:4px;}
+#insp-era{font-size:9px;color:var(--muted);margin-bottom:0;}
+.isec{border-top:1px solid var(--border);padding-top:10px;margin-top:10px;}
+.isec-lbl{font-size:7px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.irow{display:flex;justify-content:space-between;margin-bottom:5px;}
+.ik{font-size:9px;color:var(--muted);}
+.iv{font-size:9px;color:var(--bright);text-align:right;max-width:152px;}
+#insp-desc{font-size:9px;color:rgba(168,184,208,.7);line-height:1.65;margin-top:8px;padding:8px;background:rgba(255,255,255,.025);border-left:2px solid var(--border);}
+#insp-surprise{margin-top:8px;font-size:8px;padding:5px 8px;border-radius:2px;line-height:1.5;}
+.sh{background:rgba(255,80,60,.12);color:#ff8070;border:1px solid rgba(255,80,60,.2);}
+.sm{background:rgba(255,160,60,.12);color:#ffb060;border:1px solid rgba(255,160,60,.2);}
+.sl{background:rgba(80,160,255,.1);color:#80b0ff;border:1px solid rgba(80,160,255,.2);}
+#insp-chain{font-size:8px;color:var(--muted);line-height:1.7;margin-top:6px;}
+#controls{position:fixed;bottom:24px;right:20px;z-index:30;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+.ctrl{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text);background:rgba(140,180,240,.06);border:1px solid var(--border);border-radius:2px;padding:6px 12px;cursor:pointer;transition:all .2s;}
+.ctrl:hover{background:rgba(140,180,240,.14);color:var(--bright);}
+.ctrl.on{background:rgba(140,180,240,.16);color:var(--bright);border-color:rgba(140,180,240,.28);}
+#axis-legend{position:fixed;bottom:24px;left:20px;z-index:30;pointer-events:none;}
+.ax-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.ax-sym{font-size:11px;width:14px;text-align:center;font-weight:500;}
+.ax-lbl{font-size:8px;letter-spacing:.08em;text-transform:uppercase;}
+#tooltip{position:fixed;z-index:50;background:rgba(4,7,12,.92);border:1px solid var(--border);border-radius:2px;padding:6px 10px;pointer-events:none;display:none;backdrop-filter:blur(6px);}
+#tt-name{font-size:10px;color:var(--bright);margin-bottom:2px;}
+#tt-sub{font-size:8px;color:var(--muted);}
+#help{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:30;font-size:8px;color:var(--muted);letter-spacing:.1em;text-align:center;pointer-events:none;}
+#yah{position:fixed;z-index:40;pointer-events:none;display:none;}
+.yah-inner{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#ffcc60;background:rgba(4,7,12,.82);padding:3px 8px;border-radius:2px;border:1px solid rgba(255,200,80,.3);white-space:nowrap;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="header">
+  <h1>The Ladder of Complexity</h1>
+  <div class="sub">Emergence Matrix &middot; 3D &middot; 21 Levels &middot; 13.8 Billion Years</div>
+</div>
+<div id="cat-legend">
+  <div class="cat-row" id="cr-physics"   onclick="toggleCat('physics')">  <div class="cat-dot" style="background:var(--physics)"></div>  <span class="cat-name">Physics</span>  <span class="cat-count">5</span></div>
+  <div class="cat-row" id="cr-chemistry" onclick="toggleCat('chemistry')"><div class="cat-dot" style="background:var(--chemistry)"></div><span class="cat-name">Chemistry</span><span class="cat-count">4</span></div>
+  <div class="cat-row" id="cr-stellar"   onclick="toggleCat('stellar')">  <div class="cat-dot" style="background:var(--stellar)"></div>  <span class="cat-name">Stellar / Planetary</span><span class="cat-count">3</span></div>
+  <div class="cat-row" id="cr-life"      onclick="toggleCat('life')">     <div class="cat-dot" style="background:var(--life)"></div>     <span class="cat-name">Life</span>     <span class="cat-count">5</span></div>
+  <div class="cat-row" id="cr-cognition" onclick="toggleCat('cognition')"><div class="cat-dot" style="background:var(--cognition)"></div><span class="cat-name">Cognition</span><span class="cat-count">3</span></div>
+  <div class="cat-row" id="cr-tech"      onclick="toggleCat('tech')">     <div class="cat-dot" style="background:var(--tech)"></div>     <span class="cat-name">Technology</span><span class="cat-count">3</span></div>
+</div>
+<div id="inspector" class="empty">
+  <div id="insp-cat" style="color:var(--muted)">Select a node</div>
+  <div id="insp-name">Click any sphere</div>
+  <div id="insp-era">to inspect its emergence</div>
+  <div id="insp-metrics" class="isec" style="display:none"></div>
+  <div id="insp-body"    class="isec" style="display:none"></div>
+  <div id="insp-lineage" class="isec" style="display:none"></div>
+</div>
+<div id="axis-legend">
+  <div class="ax-row"><span class="ax-sym" style="color:var(--physics)">&rarr;</span><span class="ax-lbl" style="color:var(--physics)">X &middot; Scale (log metres)</span></div>
+  <div class="ax-row"><span class="ax-sym" style="color:var(--life)">&uarr;</span><span class="ax-lbl" style="color:var(--life)">Y &middot; Emergence time (recent = up)</span></div>
+  <div class="ax-row"><span class="ax-sym" style="color:var(--cognition)">&odot;</span><span class="ax-lbl" style="color:var(--cognition)">Z &middot; Integration depth (log)</span></div>
+</div>
+<div id="controls">
+  <button class="ctrl on" id="btn-edges"    onclick="toggleEdges()">Edges ON</button>
+  <button class="ctrl on" id="btn-frontier" onclick="toggleFrontier()">Frontier ON</button>
+  <button class="ctrl on" id="btn-pulse"    onclick="togglePulse()">Pulses ON</button>
+  <button class="ctrl"    id="btn-grid"     onclick="toggleGrid()">Grid OFF</button>
+  <button class="ctrl"                      onclick="resetCam()">Reset view</button>
+</div>
+<div id="tooltip"><div id="tt-name"></div><div id="tt-sub"></div></div>
+<div id="yah"><div class="yah-inner">&#9670; you are here</div></div>
+<div id="help">drag to orbit &middot; scroll to zoom &middot; click any node to inspect</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+var NODES=[
+ {id:'quarks',     name:'Quarks & Gluons',          cat:'physics',  sx:-15,tgyr:13.7999,iz:0.0, sz:1.2,disc:1,parent:null,
+  era:'10^-32 s after Big Bang',sdesc:'~10^-15 m (femtometre)',idesc:'1 - fundamental layer',idens:'10^67 bits/cm3',
+  surp:'low',surpT:'Follows directly from quantum field theory. The ground layer — no emergence discontinuity.',
+  desc:'The fundamental constituents of matter. 6 quark flavours bound by gluons. The Standard Model most basic layer. No confirmed sub-structure.'},
+ {id:'protons',    name:'Protons & Neutrons',        cat:'physics',  sx:-15,tgyr:13.7998,iz:0.5, sz:1.2,disc:2,parent:'quarks',
+  era:'~1 microsecond after Big Bang',sdesc:'~10^-15 m',idesc:'3 quarks bound by gluons',idens:'10^67 bits/cm3',
+  surp:'low',surpT:'Quark confinement follows from QCD. The proton-antiproton asymmetry (1 in 10^9) is still unexplained.',
+  desc:'Three quarks bound by the strong force. The slight excess of protons over antiprotons is why matter exists at all.'},
+ {id:'nuclei',     name:'Atomic Nuclei',             cat:'physics',  sx:-14,tgyr:13.7997,iz:1.3, sz:1.2,disc:2,parent:'protons',
+  era:'Big Bang nucleosynthesis, ~3 minutes',sdesc:'~10^-14 m',idesc:'2-92 nucleons bound',idens:'10^65 bits/cm3',
+  surp:'low',surpT:'Nuclear binding energy predictable from nucleon properties. H/He ratios match theory.',
+  desc:'Hydrogen (75%) and helium-4 (25%) nuclei formed in 20 minutes. Heavier elements up to iron formed in stars. Heavier still required supernovae.'},
+ {id:'atoms',      name:'Atoms',                     cat:'physics',  sx:-10,tgyr:13.42,  iz:1.7, sz:1.4,disc:3,parent:'nuclei',
+  era:'Recombination, 380,000 yr after Big Bang',sdesc:'~10^-10 m (angstrom)',idesc:'Nucleus + quantised electron orbitals',idens:'10^40 bits/cm3',
+  surp:'med',surpT:'Electron orbital structure produces chemistry - an entirely new domain not evident from nuclear physics.',
+  desc:'At ~3000 K electrons combined with nuclei. The CMB was released at this moment. Atomic orbital structure creates the periodic table and all chemistry.'},
+ {id:'molecules',  name:'Simple Molecules',          cat:'chemistry',sx:-9, tgyr:10.0,   iz:2.0, sz:1.4,disc:3,parent:'atoms',
+  era:'~3.8 billion years after Big Bang',sdesc:'~1 nm',idesc:'2-10 atoms sharing electrons',idens:'10^35 bits/cm3',
+  surp:'med',surpT:'Molecular geometry is not obvious from atomic properties. Water\'s 104.5 degree angle determines all its anomalous life-enabling properties.',
+  desc:'Atoms share electrons to form covalent bonds. Water\'s bent geometry makes it polar, enabling hydrogen bonding - the prerequisite for biochemistry.'},
+ {id:'organics',   name:'Complex Organic Molecules', cat:'chemistry',sx:-8, tgyr:9.0,    iz:2.7, sz:1.4,disc:3,parent:'molecules',
+  era:'~4.8 billion years after Big Bang',sdesc:'~10 nm',idesc:'10-1000 atoms with functional groups',idens:'10^32 bits/cm3',
+  surp:'med',surpT:'Functional groups give molecules catalytic properties non-obvious from simpler organic chemistry.',
+  desc:'Amino acids, lipids, nucleobases found in meteorites, interstellar clouds, cometary tails. PAHs may be 10% of all cosmic carbon. Raw materials of life are ubiquitous.'},
+ {id:'polymers',   name:'Informational Polymers',    cat:'chemistry',sx:-7, tgyr:4.0,    iz:3.5, sz:1.5,disc:4,parent:'organics',
+  era:'~9.8 billion years after Big Bang',sdesc:'~100 nm',idesc:'1000-10000 monomers in sequence',idens:'10^30 bits/cm3',
+  surp:'high',surpT:'A polymer of N monomers encodes 4^N possible sequences. Information storage in molecular structure was not predicted from polymer chemistry.',
+  desc:'RNA-like polymers that both store sequence information AND catalyse reactions. The RNA world: before DNA or proteins, RNA may have been the first information-carrying self-replicating structure.'},
+ {id:'stars',      name:'Stars',                     cat:'stellar',  sx:9,  tgyr:13.6,   iz:2.2, sz:1.6,disc:2,parent:'atoms',
+  era:'~200 million years after Big Bang',sdesc:'~10^9 m',idesc:'~10^57 atoms in gravitational equilibrium',idens:'N/A (thermal)',
+  surp:'low',surpT:'Star formation follows directly from gravity and gas physics. Nuclear ignition predictable from cross-sections.',
+  desc:'First stars (Population III) were enormous, metal-free, burning millions of years. Every atom heavier than hydrogen in your body was forged in a stellar interior.'},
+ {id:'planets',    name:'Rocky Planets',             cat:'stellar',  sx:7,  tgyr:9.2,    iz:3.0, sz:1.5,disc:2,parent:'stars',
+  era:'~4.6 billion years after Big Bang',sdesc:'~10^7 m',idesc:'~10^50 atoms in geochemical cycles',idens:'geological',
+  surp:'med',surpT:'Plate tectonics - critical for CO2 regulation and long-term habitability - is not inevitable from planet formation.',
+  desc:'Rocky planets with silicate mantles, geochemical cycles. Earth\'s plate tectonics recycles carbon maintaining habitable temperatures for ~4 billion years.'},
+ {id:'water',      name:'Liquid Water World',        cat:'stellar',  sx:7,  tgyr:4.4,    iz:3.2, sz:1.4,disc:3,parent:'planets',
+  era:'Earth: 4.4 Gya',sdesc:'~10^7 m planetary scale',idesc:'Hydrosphere + geosphere + atmosphere cycling',idens:'geological-chemical',
+  surp:'med',surpT:'Water\'s anomalous properties: max density at 4C, high specific heat, polar solvent. No other molecule has this combination.',
+  desc:'Liquid water concentrates organic molecules, facilitates proton transfer. Hydrothermal vents provide chemical gradients driving chemistry far from equilibrium.'},
+ {id:'replication',name:'Self-Replicating Chemistry',cat:'life',     sx:-7, tgyr:3.8,    iz:4.3, sz:1.8,disc:5,parent:'polymers',
+  era:'Earth: ~3.8 Gya',sdesc:'~100 nm',idesc:'~10000+ monomers in self-copying system',idens:'10^28 bits/cm3',
+  surp:'high',surpT:'THE GREAT MYSTERY. Nothing in polymer chemistry predicts self-replication. A molecule copying itself with heritable variation is fundamentally different from any prior chemistry. We do not know how this threshold was crossed.',
+  desc:'The most profound threshold: the first molecule making copies of itself with heritable variations subject to selection. Origin of Darwinian evolution. All life descends from a single origin (LUCA).'},
+ {id:'prokaryotes',name:'Prokaryotic Cells',         cat:'life',     sx:-6, tgyr:3.5,    iz:4.7, sz:1.7,disc:4,parent:'replication',
+  era:'Earth: ~3.5 Gya',sdesc:'~1 micrometre',idesc:'~2000 genes, ~10^9 cooperating atoms',idens:'10^25 bits/cm3',
+  surp:'high',surpT:'The genetic code - which amino acid each codon specifies - is near-universal and frozen very early. Why this particular code? Unknown.',
+  desc:'Bacteria and archaea. Despite simplicity, prokaryotes solved virtually every biochemical problem: photosynthesis, nitrogen fixation. They account for most of Earth\'s biomass.'},
+ {id:'eukaryotes', name:'Eukaryotic Cells',          cat:'life',     sx:-5, tgyr:2.0,    iz:5.3, sz:1.8,disc:4,parent:'prokaryotes',
+  era:'Earth: ~2.0 Gya',sdesc:'~10 micrometres',idesc:'~20000 genes, membrane-bound organelles',idens:'10^22 bits/cm3',
+  surp:'high',surpT:'The mitochondrion was once a free-living bacterium - endosymbiosis. The nucleus separates transcription from translation. Both are completely discontinuous innovations.',
+  desc:'A prokaryote engulfed another and kept it alive - mitochondria. This happened essentially once. All animals, plants, fungi are eukaryotes. Cells can be 1000x larger than bacteria.'},
+ {id:'multicell',  name:'Multicellular Life',        cat:'life',     sx:-3, tgyr:0.6,    iz:6.0, sz:1.9,disc:4,parent:'eukaryotes',
+  era:'Earth: ~600 Mya',sdesc:'~1 mm to 100 m',idesc:'~37 trillion cells in a human body',idens:'10^18 bits/cm3',
+  surp:'high',surpT:'Cells cooperating rather than competing requires suppression of individual replication. Apoptosis (programmed cell death) is a prerequisite: a cell must be willing to die for the organism.',
+  desc:'Cells differentiate into specialised types. The Cambrian Explosion (538 Mya): most major animal body plans appeared in ~25 million years. Eyes, shells, predation, bilateral symmetry.'},
+ {id:'nerves',     name:'Nervous Systems',           cat:'life',     sx:-1, tgyr:0.55,   iz:6.7, sz:1.9,disc:4,parent:'multicell',
+  era:'Earth: ~550 Mya',sdesc:'~10 cm organism scale',idesc:'Specialised signal-processing cells',idens:'10^15 bits/cm3',
+  surp:'high',surpT:'The action potential - a propagating electrochemical wave - is a completely novel information-processing mechanism.',
+  desc:'Specialised cells transmitting electrical signals at 120 m/s. Centralisation into a brain allows modelling, memory, prediction. The gap between reflexes and intention is still not understood.'},
+ {id:'brains',     name:'Complex Brains',            cat:'cognition',sx:-1, tgyr:0.003,  iz:8.5, sz:2.1,disc:5,parent:'nerves',
+  era:'Earth: ~300,000 years ago',sdesc:'~1.4 kg brain',idesc:'86 billion neurons, 10^14 synapses',idens:'10^15 bits/cm3',
+  surp:'high',surpT:'Subjective experience - the fact there is something it is like to be a brain - is not predicted by neuroscience or physics. The hard problem of consciousness has no accepted solution.',
+  desc:'86 billion neurons, ~100 trillion synaptic connections. Models the world, simulates futures, attributes mental states to others, asks questions about its own existence.'},
+ {id:'language',   name:'Language',                  cat:'cognition',sx:0,  tgyr:0.0003, iz:9.5, sz:2.0,disc:5,parent:'brains',
+  era:'~300,000 to 70,000 years ago',sdesc:'Social group scale',idesc:'Symbolic system shared across minds',idens:'supra-individual',
+  surp:'high',surpT:'Language allows one brain to install a new concept in another\'s mind. Supra-individual information transfer - not predicted from individual cognition.',
+  desc:'Combinatorial symbolic communication - finite vocabulary, infinite sentences, abstractions, past and future, counterfactuals. Culture can now accumulate across generations.'},
+ {id:'writing',    name:'Writing & External Memory', cat:'cognition',sx:3,  tgyr:0.000005,iz:10.5,sz:2.0,disc:4,parent:'language',
+  era:'~5,000 years ago, Sumer and Egypt',sdesc:'City and civilisation scale',idesc:'Culture stored outside individual brains',idens:'civilisational (distributed)',
+  surp:'high',surpT:'For the first time knowledge accumulates independently of individual memory and lifespan. Cultural complexity decoupled from biological constraints.',
+  desc:'Cuneiform, hieroglyphs, alphabets. Writing enables accumulated knowledge. All of written history is 1/1,000,000th of the age of the universe.'},
+ {id:'science',    name:'Scientific Method',         cat:'tech',     sx:5,  tgyr:0.0000004,iz:11.5,sz:2.1,disc:4,parent:'writing',
+  era:'~400 years ago, 17th century',sdesc:'Global civilisation',idesc:'Self-correcting knowledge system',idens:'exponentially growing',
+  surp:'high',surpT:'Science is a meta-level emergence: a social technology for updating collective beliefs based on evidence. The only epistemological system with a reliable mechanism for productive error.',
+  desc:'Hypothesis, experiment, falsification - Galileo, Newton, the Royal Society. Knowledge generated in 400 years exceeds all prior human history.'},
+ {id:'computers',  name:'Digital Computation',       cat:'tech',     sx:-7, tgyr:0.00000008,iz:12.5,sz:2.2,disc:4,parent:'science',
+  era:'~80 years ago',sdesc:'Nanometre transistors to global network',idesc:'~10^26 transistor ops/sec globally',idens:'10^24 bits/cm3',
+  surp:'high',surpT:'Universal computation was a purely theoretical concept (Turing 1936) before it was physical. Universality was a mathematical discovery.',
+  desc:'Programmable universal computers. Internet connects ~5 billion devices. A modern chip has more transistors than a mouse brain has neurons.'},
+ {id:'ai',         name:'Machine Learning / AI',     cat:'tech',     sx:-6, tgyr:0.00000003,iz:13.0,sz:2.5,disc:5,parent:'computers',
+  era:'~30 years ago to present',sdesc:'Data centres, distributed globally',idesc:'~10^12 parameters trained on 10^24 examples',idens:'emergent from training',
+  surp:'high',surpT:'Capabilities emerged from scale that were not predicted by researchers: in-context learning, reasoning, few-shot generalisation. Scale-to-capability relationship still poorly understood.',
+  desc:'Neural networks trained on human-generated data develop emergent capabilities not explicitly programmed. Whether this is a new complexity layer or elaboration of human cognition is genuinely unknown. Current frontier.',
+  isFrontier:true},
+ {id:"particle_frontier",name:"Particle Physics Frontier",cat:"physics",sx:-15,tgyr:1.2e-08,iz:11.8,sz:1.8,disc:4,parent:"nuclei",also:["ai"],era:"LHC, Higgs Boson confirmed 2012, ongoing",sdesc:"10^-18 m (LHC collision scale)",idesc:"Global detector networks, 10,000+ collaborating scientists",idens:"detection event",surp:"high",surpT:"The Higgs was predicted in 1964 and found exactly where predicted. But the universe shows no sign of supersymmetry, leaving the hierarchy problem unsolved. What lies beyond the Standard Model is unknown.",desc:"The LHC confirmed the Higgs boson in 2012, completing the Standard Model. All fundamental particles at accessible energies are now catalogued. Dark matter, dark energy, and matter-antimatter asymmetry remain unexplained. The next layer of physics, if it exists, is beyond current experimental reach.",isFrontier:true},
+ {id:"cosmo_obs",name:"Observational Astrophysics",cat:"stellar",sx:13,tgyr:2e-08,iz:11.5,sz:1.8,disc:4,parent:"stars",also:["ai"],era:"JWST 2021, Event Horizon Telescope 2019, LIGO 2015, Artemis 2022",sdesc:"10^26 m (observable universe scale)",idesc:"Global telescope networks and space observatories",idens:"information from ancient photons",surp:"high",surpT:"JWST found mature galaxies within 300 million years of the Big Bang, far earlier than models predicted. Each new instrument reveals surprises that rewrite our understanding.",desc:"JWST is observing galaxies within 300 million years of the Big Bang, rewriting models of early structure formation. The Event Horizon Telescope imaged the shadow of a black hole for the first time in 2019. LIGO detects gravitational waves from merging compact objects. Artemis is returning humans to lunar orbit. A golden age of astrophysical observation.",isFrontier:true},
+ {id:"bio_frontier",name:"Synthetic Biology and Genomics",cat:"life",sx:-8,tgyr:1e-08,iz:12.2,sz:1.8,disc:4,parent:"eukaryotes",also:["ai"],era:"CRISPR 2012, complete human genome 2022, synthetic cells",sdesc:"10^-8 m (molecular biology scale)",idesc:"Gene editing tools, genome sequencers, synthetic biology platforms",idens:"genomic information density",surp:"high",surpT:"CRISPR allows targeted editing of any genome. The complete telomere-to-telomere human genome was only finished in 2022. The boundary between designed and evolved life is dissolving.",desc:"CRISPR-Cas9 allows precise editing of any genome sequence. The complete human genome (including all repetitive regions) was published in 2022. Minimal synthetic cells have been constructed. mRNA vaccines demonstrated that biology can be programmed like software. We are learning to read and write the code of life.",isFrontier:true},
+ {id:"neuro_frontier",name:"Neuroscience and Brain Interfaces",cat:"cognition",sx:-1,tgyr:8e-09,iz:11.8,sz:1.8,disc:4,parent:"brains",also:["ai"],era:"Connectomics, brain-computer interfaces, fly brain map 2023",sdesc:"10^-1 m (brain scale)",idesc:"Multi-electrode arrays, fMRI, calcium imaging, BCI systems",idens:"neural circuit mapping",surp:"high",surpT:"The complete wiring diagram of a fly brain (140,000 neurons) was mapped in 2023. Brain-computer interfaces allow paralysed patients to type by imagining movement. Yet consciousness remains unexplained.",desc:"The complete connectome of a fly brain was mapped for the first time in 2023. Brain-computer interfaces allow high-bandwidth communication between brains and machines. Calcium imaging tracks thousands of neurons simultaneously in awake animals. We can read the hardware of thought but the software remains mysterious.",isFrontier:true},
+ {id:"chem_frontier",name:"Quantum Chemistry and Molecular Machines",cat:"chemistry",sx:-7,tgyr:1.5e-08,iz:12.0,sz:1.7,disc:3,parent:"polymers",also:["ai"],era:"Molecular motors Nobel 2016, quantum simulation of molecules, 2010s-2020s",sdesc:"10^-7 m (nanoscale)",idesc:"Molecular machines, quantum chemical simulations",idens:"quantum information in molecular states",surp:"med",surpT:"Molecular rotary motors won the 2016 Nobel Prize in Chemistry. Quantum computers can now simulate small molecules more accurately than classical computers, opening new paths to designed materials and drugs.",desc:"Chemists now design molecular machines at the nanoscale: rotary motors, walkers, and switches. Quantum computers simulate molecular bond formation with precision impossible for classical machines. DNA origami creates programmable nanoscale structures. The boundary between chemistry and engineering has dissolved.",isFrontier:true}
+];
+
+var nodeById={};
+NODES.forEach(function(n){nodeById[n.id]=n;});
+
+function nodePos(n){
+  var x=((n.sx+15)/30)*110-55;
+  var ya=n.tgyr*1e9;
+  var ly=ya>0?Math.log10(ya):0;
+  var y=((10.14-ly)/9.14)*60-5;
+  var z=(n.iz/13.0)*48-5;
+  return new THREE.Vector3(x,y,z);
+}
+
+// Three setup
+var can=document.getElementById('c');
+var renderer=new THREE.WebGLRenderer({canvas:can,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+var scene=new THREE.Scene();
+scene.background=new THREE.Color(0x040608);
+scene.fog=new THREE.FogExp2(0x040608,0.0028);
+var camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,0.1,2000);
+camera.position.set(60,35,80);
+scene.add(new THREE.AmbientLight(0x334466,1));
+
+var CCOL={physics:new THREE.Color('#4a8fff'),chemistry:new THREE.Color('#30c8c0'),stellar:new THREE.Color('#ffaa44'),life:new THREE.Color('#44cc70'),cognition:new THREE.Color('#cc80ff'),tech:new THREE.Color('#e8e8ff')};
+
+var glowCache={};
+function getGlowTex(cat){
+  if(glowCache[cat]) return glowCache[cat];
+  var c2=document.createElement('canvas');c2.width=c2.height=128;
+  var ctx=c2.getContext('2d');
+  var col=CCOL[cat];
+  var r=Math.round(col.r*255),g=Math.round(col.g*255),b=Math.round(col.b*255);
+  var grd=ctx.createRadialGradient(64,64,0,64,64,64);
+  grd.addColorStop(0,'rgba('+r+','+g+','+b+',1)');
+  grd.addColorStop(0.35,'rgba('+r+','+g+','+b+',0.55)');
+  grd.addColorStop(0.7,'rgba('+r+','+g+','+b+',0.12)');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd;ctx.fillRect(0,0,128,128);
+  glowCache[cat]=new THREE.CanvasTexture(c2);
+  return glowCache[cat];
+}
+
+// Stars bg
+var sG=new THREE.BufferGeometry();
+var sP=new Float32Array(4000*3);
+for(var i=0;i<4000;i++){sP[i*3]=(Math.random()-.5)*700;sP[i*3+1]=(Math.random()-.5)*450;sP[i*3+2]=(Math.random()-.5)*700;}
+sG.setAttribute('position',new THREE.BufferAttribute(sP,3));
+scene.add(new THREE.Points(sG,new THREE.PointsMaterial({color:0x445566,size:0.35,transparent:true,opacity:0.45})));
+
+// Nodes
+var nodeMeshes=[];
+var catGroups={};
+NODES.forEach(function(n){
+  var pos=nodePos(n);
+  var col=CCOL[n.cat];
+  var grp=new THREE.Group();grp.position.copy(pos);
+  var geo=new THREE.SphereGeometry(n.sz*0.5,16,16);
+  var mat=new THREE.MeshBasicMaterial({color:col});
+  var mesh=new THREE.Mesh(geo,mat);
+  mesh.userData={node:n};
+  grp.add(mesh);
+  var gs=n.sz*(n.isFrontier?4.5:3.8);
+  var spr=new THREE.Sprite(new THREE.SpriteMaterial({map:getGlowTex(n.cat),transparent:true,opacity:n.isFrontier?1.0:0.7,blending:THREE.AdditiveBlending,depthWrite:false}));
+  spr.scale.set(gs,gs,gs);
+  grp.add(spr);
+  if(n.isFrontier){
+    var rg=new THREE.TorusGeometry(n.sz*0.65,0.1,8,40);
+    var rm=new THREE.MeshBasicMaterial({color:0xffcc60,transparent:true,opacity:0.55});
+    var ring=new THREE.Mesh(rg,rm);ring.rotation.x=Math.PI/4;grp.add(ring);
+  }
+  grp.userData={node:n};
+  scene.add(grp);
+  nodeMeshes.push({grp:grp,mesh:mesh,spr:spr,node:n,pos:pos.clone()});
+  if(!catGroups[n.cat]) catGroups[n.cat]=[];
+  catGroups[n.cat].push(grp);
+});
+
+// Edges + pulses
+var edgeGrp=new THREE.Group();scene.add(edgeGrp);
+var pulses=[];var pMeshes=[];
+
+function buildEdges(){
+  while(edgeGrp.children.length) edgeGrp.remove(edgeGrp.children[0]);
+  pMeshes.forEach(function(p){scene.remove(p.mesh);});
+  pulses=[];pMeshes=[];
+  NODES.forEach(function(n){
+    if(!n.parent) return;
+    var par=nodeById[n.parent];if(!par) return;
+    var p0=nodePos(par),p1=nodePos(n);
+    var mid=p0.clone().lerp(p1,0.5).add(new THREE.Vector3((Math.random()-.5)*6,(Math.random()-.5)*4,(Math.random()-.5)*6));
+    var curve=new THREE.QuadraticBezierCurve3(p0,mid,p1);
+    var pts=curve.getPoints(32);
+    var geo=new THREE.BufferGeometry().setFromPoints(pts);
+    var mat=new THREE.LineBasicMaterial({color:CCOL[n.cat],transparent:true,opacity:0.12+n.disc*0.1});
+    edgeGrp.add(new THREE.Line(geo,mat));
+    if(n.also){n.also.forEach(function(aid){var apar=nodeById[aid];if(!apar)return;var ap0=nodePos(n),ap1=nodePos(apar);var amid=ap0.clone().lerp(ap1,0.5).add(new THREE.Vector3((Math.random()-.5)*8,(Math.random()-.5)*5,(Math.random()-.5)*8));var acurve=new THREE.QuadraticBezierCurve3(ap0,amid,ap1);var aPts=acurve.getPoints(28);var aGeo=new THREE.BufferGeometry().setFromPoints(aPts);var aMat=new THREE.LineBasicMaterial({color:CCOL[n.cat],transparent:true,opacity:0.18,linewidth:1});edgeGrp.add(new THREE.Line(aGeo,aMat));});}
+    if(n.disc>=4){
+      var pg=new THREE.SphereGeometry(0.22,6,6);
+      var pm=new THREE.MeshBasicMaterial({color:CCOL[n.cat],transparent:true,opacity:0.9});
+      var pmesh=new THREE.Mesh(pg,pm);scene.add(pmesh);
+      var pd={curve:curve,t:Math.random(),speed:0.002+Math.random()*0.003};
+      pulses.push(pd);pMeshes.push({mesh:pmesh,pd:pd});
+    }
+  });
+}
+buildEdges();
+
+// Axis lines
+var axM=new THREE.LineBasicMaterial({color:0x1e2e3e,transparent:true,opacity:0.5});
+[[-70,0,0,70,0,0],[0,-15,0,0,65,0],[0,0,-5,0,0,52]].forEach(function(a){
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0],a[1],a[2]),new THREE.Vector3(a[3],a[4],a[5])]),axM));
+});
+
+// Frontier
+var fGrp=new THREE.Group();scene.add(fGrp);
+function buildFrontier(){
+  while(fGrp.children.length) fGrp.remove(fGrp.children[0]);
+  var ap=nodePos(nodeById['ai']);
+  var pGeo=new THREE.PlaneGeometry(85,52);
+  var pMat=new THREE.MeshBasicMaterial({color:0x604010,transparent:true,opacity:0.05,side:THREE.DoubleSide});
+  var pl=new THREE.Mesh(pGeo,pMat);
+  pl.position.set(ap.x+12,ap.y+6,ap.z+10);pl.rotation.y=Math.PI/5;fGrp.add(pl);
+  var fM2=new THREE.LineBasicMaterial({color:0xcc8820,transparent:true,opacity:0.1});
+  for(var ii=-4;ii<=4;ii++){
+    var lp=[new THREE.Vector3(ap.x-40,ap.y+ii*5,ap.z-20),new THREE.Vector3(ap.x+40,ap.y+ii*5,ap.z+20)];
+    fGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(lp),fM2));
+  }
+  var uG=new THREE.BufferGeometry(),uP=new Float32Array(300*3);
+  for(var jj=0;jj<300;jj++){uP[jj*3]=ap.x+8+Math.random()*30;uP[jj*3+1]=ap.y+Math.random()*20;uP[jj*3+2]=ap.z+Math.random()*20;}
+  uG.setAttribute('position',new THREE.BufferAttribute(uP,3));
+  fGrp.add(new THREE.Points(uG,new THREE.PointsMaterial({color:0x604010,size:0.25,transparent:true,opacity:0.22})));
+}
+buildFrontier();
+
+// Grid
+var gridGrp=new THREE.Group();scene.add(gridGrp);gridGrp.visible=false;
+var gM=new THREE.LineBasicMaterial({color:0x182030,transparent:true,opacity:0.3});
+for(var xi=-60;xi<=60;xi+=12){gridGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(xi,-10,0),new THREE.Vector3(xi,60,0)]),gM));}
+for(var yi=-10;yi<=60;yi+=12){gridGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-60,yi,0),new THREE.Vector3(60,yi,0)]),gM));}
+
+// Orbit state
+var orbitTheta=0.6,orbitPhi=1.05,orbitR=115;
+var isDrag=false,isDown=false,prevM={x:0,y:0};
+var CENTER=new THREE.Vector3(0,22,16);
+var raycaster=new THREE.Raycaster();
+var mouse2=new THREE.Vector2();
+
+can.addEventListener('mousedown',function(e){isDrag=false;isDown=true;prevM={x:e.clientX,y:e.clientY};document.body.classList.add('grabbing');});
+can.addEventListener('mousemove',function(e){
+  if(isDown){var dx=e.clientX-prevM.x,dy=e.clientY-prevM.y;if(Math.abs(dx)+Math.abs(dy)>3)isDrag=true;if(isDrag){orbitTheta-=dx*0.006;orbitPhi=Math.max(0.12,Math.min(Math.PI*.88,orbitPhi-dy*0.004));prevM={x:e.clientX,y:e.clientY};}}
+  mouse2.x=(e.clientX/innerWidth)*2-1;mouse2.y=-(e.clientY/innerHeight)*2+1;
+  raycaster.setFromCamera(mouse2,camera);
+  var hits=raycaster.intersectObjects(nodeMeshes.map(function(nm){return nm.mesh;}));
+  var tip=document.getElementById('tooltip');
+  if(hits.length){var n=hits[0].object.userData.node;tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-12)+'px';document.getElementById('tt-name').textContent=n.name;document.getElementById('tt-sub').textContent=n.era;can.style.cursor='pointer';}
+  else{tip.style.display='none';can.style.cursor=isDrag?'grabbing':'grab';}
+});
+can.addEventListener('mouseup',function(e){isDown=false;document.body.classList.remove('grabbing');if(!isDrag)handleClick(e);setTimeout(function(){isDrag=false;},50);});
+can.addEventListener('wheel',function(e){orbitR=Math.max(20,Math.min(260,orbitR+e.deltaY*0.08));});
+can.addEventListener('touchstart',function(e){isDrag=false;isDown=true;prevM={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
+can.addEventListener('touchmove',function(e){var dx=e.touches[0].clientX-prevM.x,dy=e.touches[0].clientY-prevM.y;if(Math.abs(dx)+Math.abs(dy)>3)isDrag=true;if(isDrag){orbitTheta-=dx*0.006;orbitPhi=Math.max(0.12,Math.min(Math.PI*.88,orbitPhi-dy*0.004));prevM={x:e.touches[0].clientX,y:e.touches[0].clientY};}e.preventDefault();},{passive:false});
+can.addEventListener('touchend',function(e){isDown=false;if(!isDrag)handleClick({clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY});});
+
+function handleClick(e){
+  mouse2.x=(e.clientX/innerWidth)*2-1;mouse2.y=-(e.clientY/innerHeight)*2+1;
+  raycaster.setFromCamera(mouse2,camera);
+  var hits=raycaster.intersectObjects(nodeMeshes.map(function(nm){return nm.mesh;}));
+  if(hits.length) selectNode(hits[0].object.userData.node);
+}
+
+function selectNode(n){
+  var col=CCOL[n.cat],hexCol='#'+col.getHexString();
+  var panel=document.getElementById('inspector');panel.classList.remove('empty');
+  var catEl=document.getElementById('insp-cat');catEl.textContent=n.cat.toUpperCase()+' LAYER';catEl.style.color=hexCol;
+  document.getElementById('insp-name').textContent=n.name;
+  document.getElementById('insp-era').textContent=n.era;
+  var disc='';for(var d=0;d<n.disc;d++)disc+='&#9608;';for(var d2=n.disc;d2<5;d2++)disc+='&#9617;';
+  var m=document.getElementById('insp-metrics');m.style.display='block';
+  m.innerHTML='<div class="isec-lbl">Coordinates</div>'
+    +'<div class="irow"><span class="ik">X Scale</span><span class="iv">10^'+n.sx+' m &middot; '+n.sdesc+'</span></div>'
+    +'<div class="irow"><span class="ik">Y Emerged</span><span class="iv">'+fmtT(n.tgyr)+'</span></div>'
+    +'<div class="irow"><span class="ik">Z Integration</span><span class="iv">'+n.idesc+'</span></div>'
+    +'<div class="irow"><span class="ik">Info density</span><span class="iv">'+n.idens+'</span></div>'
+    +'<div class="irow"><span class="ik">Discontinuity</span><span class="iv">'+disc+' '+n.disc+'/5</span></div>';
+  var b=document.getElementById('insp-body');b.style.display='block';
+  var cls=n.surp==='high'?'sh':n.surp==='med'?'sm':'sl';
+  b.innerHTML='<div class="isec-lbl">What emerged</div><div id="insp-desc">'+n.desc+'</div><div id="insp-surprise" class="'+cls+'"><strong>Predictability:</strong> '+n.surpT+'</div>';
+  var lin=document.getElementById('insp-lineage');lin.style.display='block';
+  lin.innerHTML='<div class="isec-lbl">Emergence chain</div><div id="insp-chain">'+buildChain(n)+'</div>';
+  highlightNode(n.id);
+}
+
+function fmtT(tg){if(tg<0.001)return (tg*1e6).toFixed(0)+' kyr ago';if(tg<1)return (tg*1000).toFixed(0)+' Myr ago';return tg.toFixed(2)+' Gyr ago';}
+function buildChain(n){var c=[n.name],cur=n;while(cur.parent){cur=nodeById[cur.parent];if(cur)c.unshift(cur.name);}return c.join(' &rarr; ');}
+function highlightNode(id){nodeMeshes.forEach(function(nm){var sel=nm.node.id===id;nm.spr.material.opacity=sel?1.0:0.22;nm.mesh.material.transparent=!sel;nm.mesh.material.opacity=sel?1.0:0.28;});}
+function resetHighlight(){nodeMeshes.forEach(function(nm){nm.spr.material.opacity=nm.node.isFrontier?1.0:0.7;nm.mesh.material.transparent=false;nm.mesh.material.opacity=1.0;});}
+
+var showEdges=true,showFrontier=true,showPulse=true,showGrid2=false;
+function toggleCat(cat){
+  if(!catGroups[cat])return;
+  var vis=!catGroups[cat][0].visible;
+  catGroups[cat].forEach(function(g){g.visible=vis;});
+  var row=document.getElementById('cr-'+cat);if(row)row.classList.toggle('hidden',!vis);
+}
+function toggleEdges(){showEdges=!showEdges;edgeGrp.visible=showEdges;var b=document.getElementById('btn-edges');b.textContent='Edges '+(showEdges?'ON':'OFF');b.classList.toggle('on',showEdges);}
+function toggleFrontier(){showFrontier=!showFrontier;fGrp.visible=showFrontier;var b=document.getElementById('btn-frontier');b.textContent='Frontier '+(showFrontier?'ON':'OFF');b.classList.toggle('on',showFrontier);}
+function togglePulse(){showPulse=!showPulse;pMeshes.forEach(function(p){p.mesh.visible=showPulse;});var b=document.getElementById('btn-pulse');b.textContent='Pulses '+(showPulse?'ON':'OFF');b.classList.toggle('on',showPulse);}
+function toggleGrid(){showGrid2=!showGrid2;gridGrp.visible=showGrid2;var b=document.getElementById('btn-grid');b.textContent='Grid '+(showGrid2?'ON':'OFF');b.classList.toggle('on',showGrid2);}
+function resetCam(){
+  orbitTheta=0.6;orbitPhi=1.05;orbitR=115;
+  resetHighlight();
+  var p=document.getElementById('inspector');
+  p.classList.add('empty');
+  document.getElementById('insp-cat').textContent='Select a node';
+  document.getElementById('insp-cat').style.color='var(--muted)';
+  document.getElementById('insp-name').textContent='Click any sphere';
+  document.getElementById('insp-era').textContent='to inspect its emergence';
+  document.getElementById('insp-metrics').style.display='none';
+  document.getElementById('insp-body').style.display='none';
+  document.getElementById('insp-lineage').style.display='none';
+}
+
+function updateYAH(){
+  var aiNM=null;nodeMeshes.forEach(function(nm){if(nm.node.id==='ai')aiNM=nm;});
+  if(!aiNM)return;
+  var p=aiNM.pos.clone();p.project(camera);
+  var x=(p.x*.5+.5)*innerWidth,y=(-p.y*.5+.5)*innerHeight;
+  var lbl=document.getElementById('yah');
+  if(p.z<1){lbl.style.display='block';lbl.style.left=(x+16)+'px';lbl.style.top=(y-24)+'px';}
+  else lbl.style.display='none';
+}
+
+var T=0;
+function animate(){
+  requestAnimationFrame(animate);T+=0.005;
+  var cx=CENTER.x+orbitR*Math.sin(orbitPhi)*Math.cos(orbitTheta);
+  var cy=CENTER.y+orbitR*Math.cos(orbitPhi);
+  var cz=CENTER.z+orbitR*Math.sin(orbitPhi)*Math.sin(orbitTheta);
+  camera.position.lerp(new THREE.Vector3(cx,cy,cz),0.07);
+  camera.lookAt(CENTER);
+  if(!isDown&&!isDrag)orbitTheta+=0.0005;
+  nodeMeshes.forEach(function(nm,i){
+    var pulse=1+Math.sin(T*1.6+i*0.45)*0.06;
+    nm.spr.scale.setScalar(nm.node.sz*(nm.node.isFrontier?4.5:3.8)*pulse);
+    if(nm.node.isFrontier){nm.spr.material.opacity=0.7+0.3*Math.sin(T*2.2);nm.grp.children.forEach(function(c){if(c.geometry&&c.geometry.type==='TorusGeometry')c.rotation.z+=0.012;});}
+  });
+  if(showPulse){pMeshes.forEach(function(p){p.pd.t+=p.pd.speed;if(p.pd.t>1)p.pd.t-=1;var pos=p.pd.curve.getPoint(p.pd.t);p.mesh.position.copy(pos);p.mesh.material.opacity=Math.sin(p.pd.t*Math.PI)*0.9;});}
+  updateYAH();
+  renderer.render(scene,camera);
+}
+window.addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+animate();
+</script>
+</body>
+</html>

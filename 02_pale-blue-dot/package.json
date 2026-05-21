@@ -1,0 +1,37 @@
+{
+  "name": "pale-blue-dot",
+  "version": "1.0.0",
+  "description": "Interactive fractal descent through the cosmos — Observable Universe to Earth",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve . --listen 3000",
+    "dev": "npx serve . --listen 3000 --cors",
+    "lint": "npx eslint src/js/**/*.js",
+    "validate-data": "node scripts/validate-data.js"
+  },
+  "keywords": [
+    "cosmology",
+    "astronomy",
+    "three.js",
+    "visualization",
+    "pale-blue-dot",
+    "sagan",
+    "solar-system",
+    "galaxy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "last 2 Edge versions"
+  ]
+}

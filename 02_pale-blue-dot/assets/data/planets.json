@@ -1,0 +1,141 @@
+{
+  "_source": "JPL Horizons System / DE430 Ephemeris — J2000.0 epoch",
+  "_note": "Orbital elements are mean elements, not osculating. Eccentricity and inclination vary slowly over time.",
+  "planets": [
+    {
+      "name": "Mercury",
+      "symbol": "☿",
+      "a_AU": 0.38710,
+      "e": 0.20563,
+      "i_deg": 7.005,
+      "period_yr": 0.24085,
+      "mass_earth": 0.05527,
+      "radius_km": 2439.7,
+      "color_hex": "#AAA08C",
+      "spectral_note": "No atmosphere; heavily cratered",
+      "moons": 0
+    },
+    {
+      "name": "Venus",
+      "symbol": "♀",
+      "a_AU": 0.72333,
+      "e": 0.00677,
+      "i_deg": 3.395,
+      "period_yr": 0.61520,
+      "mass_earth": 0.81500,
+      "radius_km": 6051.8,
+      "color_hex": "#DCc88C",
+      "spectral_note": "Dense CO₂ atmosphere; surface 464°C",
+      "moons": 0
+    },
+    {
+      "name": "Earth",
+      "symbol": "♁",
+      "a_AU": 1.00000,
+      "e": 0.01671,
+      "i_deg": 0.000,
+      "period_yr": 1.00000,
+      "mass_earth": 1.00000,
+      "radius_km": 6371.0,
+      "color_hex": "#5082D2",
+      "spectral_note": "Only confirmed life-bearing world",
+      "moons": 1,
+      "is_descent_target": true,
+      "next_level": 6
+    },
+    {
+      "name": "Mars",
+      "symbol": "♂",
+      "a_AU": 1.52368,
+      "e": 0.09340,
+      "i_deg": 1.850,
+      "period_yr": 1.88085,
+      "mass_earth": 0.10745,
+      "radius_km": 3389.5,
+      "color_hex": "#C87850",
+      "spectral_note": "Thin CO₂ atmosphere; Olympus Mons, Valles Marineris",
+      "moons": 2
+    },
+    {
+      "name": "Jupiter",
+      "symbol": "♃",
+      "a_AU": 5.20260,
+      "e": 0.04849,
+      "i_deg": 1.303,
+      "period_yr": 11.8618,
+      "mass_earth": 317.83,
+      "radius_km": 71492,
+      "color_hex": "#DCBE8C",
+      "spectral_note": "Largest planet; Great Red Spot is 350+ year old storm",
+      "moons": 95
+    },
+    {
+      "name": "Saturn",
+      "symbol": "♄",
+      "a_AU": 9.55491,
+      "e": 0.05551,
+      "i_deg": 2.489,
+      "period_yr": 29.4571,
+      "mass_earth": 95.159,
+      "radius_km": 60268,
+      "color_hex": "#DCD2A0",
+      "spectral_note": "Ring system extends 282,000 km from center; rings ~10m thick",
+      "moons": 146,
+      "has_ring": true
+    },
+    {
+      "name": "Uranus",
+      "symbol": "♅",
+      "a_AU": 19.2184,
+      "e": 0.04630,
+      "i_deg": 0.773,
+      "period_yr": 84.0107,
+      "mass_earth": 14.536,
+      "radius_km": 25559,
+      "color_hex": "#A0DCE6",
+      "spectral_note": "Axial tilt 97.77° — orbits on its side; 2 ring systems",
+      "moons": 27
+    },
+    {
+      "name": "Neptune",
+      "symbol": "♆",
+      "a_AU": 30.0700,
+      "e": 0.00895,
+      "i_deg": 1.770,
+      "period_yr": 164.790,
+      "mass_earth": 17.147,
+      "radius_km": 24622,
+      "color_hex": "#6482D2",
+      "spectral_note": "Fastest winds in solar system (~2,100 km/h); Triton orbits retrograde",
+      "moons": 16
+    }
+  ],
+  "special_regions": [
+    {
+      "name": "Asteroid Belt",
+      "a_inner_AU": 2.2,
+      "a_outer_AU": 3.2,
+      "total_mass_earth": 0.0004,
+      "note": "~1-2 million objects > 1km. Dominated by Ceres, Vesta, Pallas, Hygiea."
+    },
+    {
+      "name": "Kuiper Belt",
+      "a_inner_AU": 30,
+      "a_outer_AU": 55,
+      "total_mass_earth": 0.1,
+      "note": "Trans-Neptunian objects. Contains Pluto, Eris, Makemake, Haumea, Arrokoth."
+    },
+    {
+      "name": "Scattered Disc",
+      "a_inner_AU": 30,
+      "a_outer_AU": 1000,
+      "note": "Dynamically unstable region; source of short-period comets."
+    },
+    {
+      "name": "Oort Cloud",
+      "a_inner_AU": 2000,
+      "a_outer_AU": 100000,
+      "note": "Hypothetical; source of long-period comets. ~0.5 ly to edge."
+    }
+  ]
+}
