@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Fly Through Cosmic Time</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=IBM+Plex+Mono:wght@300;400&display=swap');
+:root{
+  --bg:#020409;--lp:rgba(2,5,12,0.97);--rp:rgba(2,5,12,0.97);
+  --bdr:rgba(80,120,210,0.12);--txt:#88a0bc;--brt:#d4e4ff;--mut:#2a3848;
+  --serif:'Cormorant Garamond',serif;--mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
+body{display:grid;grid-template-columns:205px 1fr 245px;grid-template-rows:1fr 72px;font-family:var(--mono);}
+
+/* LEFT */
+#lp{grid-row:1/3;background:var(--lp);border-right:1px solid var(--bdr);padding:14px 12px;overflow-y:auto;display:flex;flex-direction:column;}
+#lp h1{font-family:var(--serif);font-weight:300;font-style:italic;font-size:17px;color:var(--brt);line-height:1.15;}
+.ltag{font-size:7px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-top:3px;padding-bottom:11px;border-bottom:1px solid var(--bdr);margin-bottom:11px;}
+.ls{margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--bdr);}
+.ls:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.lt{font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);margin-bottom:7px;}
+#pbtn{width:100%;padding:6px;background:rgba(80,120,210,.1);border:1px solid rgba(80,120,210,.25);border-radius:2px;color:#78a0dc;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-bottom:5px;}
+#pbtn:hover,#pbtn.on{background:rgba(80,120,210,.22);color:var(--brt);}
+.srow{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.slbl{font-size:7.5px;color:var(--mut);}
+select{background:rgba(255,255,255,.04);border:1px solid var(--bdr);color:var(--txt);font-family:var(--mono);font-size:7.5px;padding:2px 4px;border-radius:2px;cursor:pointer;}
+.ebtn{display:flex;align-items:center;gap:6px;padding:3px 5px;border-radius:2px;cursor:pointer;margin-bottom:1px;transition:background .15s;}
+.ebtn:hover{background:rgba(80,120,210,.07);}
+.ebtn.cur{background:rgba(80,120,210,.13);}
+.edot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.elbl{font-size:7px;color:var(--txt);line-height:1.3;}
+.ebtn.cur .elbl{color:var(--brt);}
+.togrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;cursor:pointer;}
+.toglbl{font-size:7.5px;color:var(--txt);display:flex;align-items:center;gap:6px;}
+.togdot{width:6px;height:6px;border-radius:50%;}
+.pill{width:24px;height:12px;border-radius:6px;border:1px solid var(--bdr);position:relative;flex-shrink:0;}
+.pill.on{background:rgba(80,120,210,.28);border-color:rgba(80,120,210,.45);}
+.pill::after{content:'';position:absolute;top:1.5px;width:7px;height:7px;border-radius:50%;background:var(--mut);transition:all .15s;}
+.pill.on::after{left:14px;background:#78a0dc;}
+.pill.off::after{left:1.5px;}
+.scaleln{display:flex;justify-content:space-between;margin-bottom:3px;}
+.sk{font-size:7px;color:var(--mut);}.sv{font-size:7px;color:var(--brt);}
+
+/* VIEWPORT */
+#vp{position:relative;overflow:hidden;}
+#c3d{display:block;width:100%;height:100%;}
+#lblcanvas{position:absolute;top:0;left:0;pointer-events:none;width:100%;height:100%;}
+#ov{position:absolute;inset:0;pointer-events:none;padding:12px;}
+.ovtop{display:flex;align-items:flex-start;justify-content:space-between;}
+#ername{font-family:var(--serif);font-style:italic;font-size:22px;font-weight:300;color:rgba(212,228,255,.8);text-shadow:0 0 20px rgba(0,0,0,.9);transition:color .5s;line-height:1.1;}
+#scalebadge{font-size:7px;letter-spacing:.13em;text-transform:uppercase;padding:3px 8px;border:1px solid rgba(80,120,210,.18);border-radius:2px;color:rgba(80,120,210,.65);background:rgba(2,4,8,.65);}
+#pctblock{text-align:right;}
+#pctval{font-family:var(--serif);font-size:30px;font-weight:300;color:rgba(212,228,255,.5);line-height:1;}
+#pctsub{font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-top:2px;}
+.ovbot{position:absolute;bottom:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-end;}
+#cosmictime{font-size:8px;color:rgba(80,120,210,.5);letter-spacing:.05em;}
+#hint{font-size:7px;letter-spacing:.1em;color:rgba(80,120,210,.28);}
+
+/* PHASE LEGEND */
+#phlegend{position:absolute;bottom:46px;left:12px;background:rgba(2,5,12,.82);border:1px solid var(--bdr);border-radius:2px;padding:7px 9px;backdrop-filter:blur(6px);}
+.phrow{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.phrow:last-child{margin-bottom:0;}
+.phswatch{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.phtext{font-size:7.5px;color:rgba(136,160,188,.75);}
+
+/* RIGHT */
+#rp{grid-row:1/3;grid-column:3;background:var(--rp);border-left:1px solid var(--bdr);padding:14px;overflow-y:auto;}
+.rsec{margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--bdr);}
+.rsec:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.rtit{font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);margin-bottom:7px;}
+#riname{font-family:var(--serif);font-size:17px;font-weight:300;color:var(--brt);line-height:1.2;margin-bottom:3px;}
+#ritime{font-size:8px;color:var(--mut);margin-bottom:7px;}
+#ridesc{font-size:8px;color:rgba(136,160,188,.7);line-height:1.65;}
+.lgrow{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.lgdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.lglbl{font-size:7.5px;color:var(--txt);}
+#selname{font-family:var(--serif);font-size:14px;color:var(--brt);margin-bottom:2px;font-weight:300;}
+#selt{font-size:7.5px;color:var(--mut);margin-bottom:3px;}
+#selpct{font-size:7.5px;margin-bottom:5px;}
+#seldesc{font-size:8px;color:rgba(136,160,188,.65);line-height:1.6;}
+
+/* SINGLE TIMELINE STRIP */
+#tlwrap{grid-column:2;background:#020409;border-top:1px solid var(--bdr);position:relative;overflow:hidden;}
+#tlcanvas{display:block;width:100%;height:100%;cursor:crosshair;}
+#tllabel{position:absolute;left:6px;bottom:5px;font-size:6px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);pointer-events:none;}
+/* tooltip */
+#tltt{position:fixed;z-index:100;background:rgba(2,5,12,.95);border:1px solid var(--bdr);border-radius:2px;padding:5px 8px;pointer-events:none;display:none;}
+#ttname{font-size:8.5px;color:var(--brt);}
+#ttinfo{font-size:7px;color:var(--mut);margin-top:2px;}
+#ttiicon{font-size:8px;color:rgba(80,120,210,.7);margin-left:4px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- LEFT PANEL -->
+<div id="lp">
+  <h1>Fly Through<br>Cosmic Time</h1>
+  <div class="ltag">13.8 Billion Years &middot; Single Space</div>
+  <div class="ls">
+    <div class="lt">Playback</div>
+    <button id="pbtn" onclick="togglePlay()">&#9654; Begin Journey</button>
+    <div class="srow"><span class="slbl">Speed</span>
+      <select onchange="setSpd(this.value)"><option value="0.3">Slow</option><option value="1" selected>Normal</option><option value="2">Fast</option><option value="4">Rapid</option></select>
+    </div>
+  </div>
+  <div class="ls">
+    <div class="lt">Era Navigator</div>
+    <div id="eralist"></div>
+  </div>
+  <div class="ls">
+    <div class="lt">Layers</div>
+    <div class="togrow" onclick="tog('cosmic')"><span class="toglbl"><span class="togdot" style="background:#4a88ff"></span>Cosmic / Physical</span><div class="pill on" id="p-cosmic"></div></div>
+    <div class="togrow" onclick="tog('stellar')"><span class="toglbl"><span class="togdot" style="background:#ffaa44"></span>Stellar / Galactic</span><div class="pill on" id="p-stellar"></div></div>
+    <div class="togrow" onclick="tog('solar')"><span class="toglbl"><span class="togdot" style="background:#44cc70"></span>Solar / Planetary</span><div class="pill on" id="p-solar"></div></div>
+    <div class="togrow" onclick="tog('life')"><span class="toglbl"><span class="togdot" style="background:#e06080"></span>Life</span><div class="pill on" id="p-life"></div></div>
+    <div class="togrow" onclick="togObs()"><span class="toglbl"><span class="togdot" style="background:#3355aa"></span>Observable Univ. sphere</span><div class="pill on" id="p-obs"></div></div>
+    <div class="togrow" onclick="togGuides()"><span class="toglbl"><span class="togdot" style="background:#334455"></span>Guide lines</span><div class="pill on" id="p-guides"></div></div>
+    <div class="togrow" onclick="togLabels3d()"><span class="toglbl"><span class="togdot" style="background:#8899aa"></span>3D Labels</span><div class="pill on" id="p-lbl3d"></div></div>
+  </div>
+  <div class="ls">
+    <div class="lt">Scale (if bar = 1 metre)</div>
+    <div class="scaleln"><span class="sk">Solar System era</span><span class="sv">8 mm</span></div>
+    <div class="scaleln"><span class="sk">All life</span><span class="sv">5 mm</span></div>
+    <div class="scaleln"><span class="sk">Complex life</span><span class="sv">1.4 mm</span></div>
+    <div class="scaleln"><span class="sk">Homo sapiens</span><span class="sv">0.022 mm</span></div>
+    <div class="scaleln"><span class="sk">Written history</span><span class="sv">0.00036 mm</span></div>
+  </div>
+</div>
+
+<!-- VIEWPORT -->
+<div id="vp">
+  <canvas id="c3d"></canvas>
+  <canvas id="lblcanvas"></canvas>
+  <div id="ov">
+    <div class="ovtop">
+      <div>
+        <div id="ername">Big Bang</div>
+        <div id="scalebadge">Universe Scale</div>
+      </div>
+      <div id="pctblock">
+        <div id="pctval">0.000%</div>
+        <div id="pctsub">of cosmic time elapsed</div>
+      </div>
+    </div>
+    <div class="ovbot">
+      <div id="cosmictime">T + 0 yr</div>
+      <div id="hint">drag to orbit &middot; scroll to zoom &middot; scrub strip below</div>
+    </div>
+  </div>
+  <div id="phlegend"></div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div id="rp">
+  <div class="rsec">
+    <div class="rtit">Current Era</div>
+    <div id="riname">Big Bang</div>
+    <div id="ritime">T = 0</div>
+    <div id="ridesc"></div>
+  </div>
+  <div class="rsec">
+    <div class="rtit">Selected Event</div>
+    <div id="selname" style="color:var(--mut);font-size:8px;font-family:var(--mono);">Click a spike on the timeline</div>
+    <div id="selt"></div><div id="selpct"></div><div id="seldesc"></div>
+  </div>
+  <div class="rsec">
+    <div class="rtit">Color Index</div>
+    <div class="lgrow"><div class="lgdot" style="background:#4a88ff"></div><span class="lglbl">Cosmic / Physical</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#ffaa44"></div><span class="lglbl">Stellar events</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#cc8822"></div><span class="lglbl">Galactic structure</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#44cc70"></div><span class="lglbl">Solar system</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#40b8c0"></div><span class="lglbl">Planetary / geological</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#e06080"></div><span class="lglbl">Life</span></div>
+    <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--bdr);">
+      <div class="lgrow"><div style="width:20px;height:2px;background:rgba(255,220,80,.8);border-radius:1px;margin-right:7px;flex-shrink:0;"></div><span class="lglbl">Timeline playhead</span></div>
+      <div class="lgrow"><div style="width:20px;height:10px;background:rgba(80,120,210,.15);border-radius:1px;margin-right:7px;flex-shrink:0;border:1px solid rgba(80,120,210,.3);"></div><span class="lglbl">Era color band</span></div>
+      <div class="lgrow"><div style="width:20px;height:1px;border-top:1px solid rgba(60,100,180,.3);margin-right:7px;flex-shrink:0;"></div><span class="lglbl">Guide wireframe sphere</span></div>
+    </div>
+  </div>
+  <div class="rsec">
+    <div class="rtit">3D Particle Legend</div>
+    <div class="lgrow"><div class="lgdot" style="background:#ff3311"></div><span class="lglbl">Up quark (u)</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#33ff11"></div><span class="lglbl">Down quark (d)</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#ffaa00"></div><span class="lglbl">Gluon (g)</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#4488ff"></div><span class="lglbl">Proton (p&#x207a;)</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#889999"></div><span class="lglbl">Neutron (n)</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#44aaff"></div><span class="lglbl">Hydrogen atom (H)</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#ffee44"></div><span class="lglbl">Helium atom (He)</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#88aaff"></div><span class="lglbl">Pop III star</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#ffdd44"></div><span class="lglbl">Quasar / active nucleus</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#ffe060"></div><span class="lglbl">Main sequence star / Sun</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#4488dd"></div><span class="lglbl">Earth / ocean world</span></div>
+    <div class="lgrow"><div class="lgdot" style="background:#44ddcc"></div><span class="lglbl">Bioluminescent life</span></div>
+  </div>
+</div>
+
+<!-- SINGLE TIMELINE STRIP -->
+<div id="tlwrap">
+  <canvas id="tlcanvas"></canvas>
+  <div id="tllabel">LOG SCALE &middot; 13.8 BILLION YEARS &middot; HOVER SPIKE FOR EVENT &middot; CLICK FOR DETAIL</div>
+</div>
+<div id="tltt"><span id="ttname"></span><span id="ttiicon">&#x24d8;</span><br><span id="ttinfo"></span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+var TL   = [[0.0, 1e-30, "Quark-Gluon Plasma", 180, 1377026, 0.014], [0.06, 3.17e-17, "Protons Form", 170, 787460, 0.012], [0.09, 1.9e-15, "Nucleosynthesis", 160, 656900, 0.01], [0.16, 0.00038, "CMB Released", 145, 394248, 0.008], [0.22, 0.003, "Dark Ages", 130, 131848, 0.006], [0.3, 0.2, "First Stars Ignite", 110, 66313, 0.005], [0.4, 0.7, "First Galaxies", 85, 66057, 0.004], [0.5, 2.0, "Galaxy Web", 60, 66056, 0.004], [0.57, 5.8, "Milky Way Disk", 40, 66057, 0.004], [0.64, 9.2, "Sun Ignites", 22, 66314, 0.005], [0.67, 9.4, "Oceans Form", 14, 67340, 0.006], [0.7, 10.0, "First Life", 9, 68108, 0.007], [0.76, 11.4, "Great Oxidation", 7, 68618, 0.007], [0.83, 13.0, "Complex Life", 5.5, 134664, 0.008], [0.88, 13.262, "Cambrian Explosion", 4.5, 200712, 0.008], [0.93, 13.57, "Dinosaurs", 3.5, 201224, 0.009], [0.96, 13.734, "Mass Extinction", 3, 135178, 0.009], [0.985, 13.799, "Homo sapiens", 2.5, 67340, 0.009], [1.0, 13.8, "Now", 2.2, 67340, 0.01]];
+var EVS  = [{"id": "bigbang", "animT": 0.0, "t_gyr": 1e-30, "cat": "cosmic", "sig": 5, "name": "Big Bang", "desc": "All matter, energy, space and time emerge from a singularity smaller than an atom. Temperature: 10^32 K. All four forces unified. The universe is 10^-43 seconds old."}, {"id": "inflation", "animT": 0.01, "t_gyr": 3e-33, "cat": "cosmic", "sig": 5, "name": "Cosmic Inflation", "desc": "The universe expands by at least 10^26 in a fraction of a second, driven by a scalar field. This smooths the universe and imprints quantum fluctuations as the seeds of all future structure."}, {"id": "qgp", "animT": 0.03, "t_gyr": 3.17e-23, "cat": "cosmic", "sig": 4, "name": "Quark-Gluon Plasma", "desc": "A trillion-degree soup of quarks, gluons and leptons. Up quarks (u), down quarks (d) and gluons are the main constituents. Temperature: 10^13 K. This state is briefly recreated in heavy-ion colliders today."}, {"id": "hadrons", "animT": 0.06, "t_gyr": 3.17e-17, "cat": "cosmic", "sig": 5, "name": "Protons and Neutrons Form", "desc": "As the universe cools below 10^13 K, quarks become permanently confined inside protons (2 up + 1 down quarks) and neutrons (1 up + 2 down). For every billion antiprotons, there are a billion and one protons. That asymmetry is why matter exists."}, {"id": "bbn", "animT": 0.09, "t_gyr": 1.9e-15, "cat": "cosmic", "sig": 5, "name": "Big Bang Nucleosynthesis", "desc": "Between 3 and 20 minutes: protons and neutrons fuse into light nuclei. Hydrogen-1 (75%), helium-4 (25%), trace deuterium and lithium-7. Heavier elements must wait for stars. The universe will never be this hot again."}, {"id": "mreq", "animT": 0.12, "t_gyr": 4.7e-05, "cat": "cosmic", "sig": 3, "name": "Matter-Radiation Equality", "desc": "47,000 years after the Big Bang, matter density equals radiation density. Gravity begins to dominate over radiation pressure, and density fluctuations start to grow into the seeds of cosmic structure."}, {"id": "cmb", "animT": 0.16, "t_gyr": 0.00038, "cat": "cosmic", "sig": 5, "name": "CMB Released", "desc": "380,000 years after the Big Bang, the universe cools to 3,000 K. Electrons combine with nuclei forming neutral hydrogen and helium atoms for the first time. The universe becomes transparent. Light released at this moment is the Cosmic Microwave Background."}, {"id": "darkages", "animT": 0.22, "t_gyr": 0.003, "cat": "stellar", "sig": 3, "name": "Cosmic Dark Ages", "desc": "For hundreds of millions of years the universe is filled with neutral hydrogen and helium gas condensing under gravity. No stars, no light. Tiny density fluctuations inherited from inflation slowly grow into the seeds of future galaxies."}, {"id": "pop3", "animT": 0.3, "t_gyr": 0.2, "cat": "stellar", "sig": 5, "name": "First Stars Ignite (Pop III)", "desc": "After 200 million years of darkness, enormous metal-free stars ignite. Population III stars are 100-300 solar masses, blazing blue-white at 100,000 K. They live only 2-3 million years before exploding as supernovae and seeding the universe with the first heavy elements."}, {"id": "firstsn", "animT": 0.315, "t_gyr": 0.202, "cat": "stellar", "sig": 4, "name": "First Supernovae", "desc": "The first Pop III stars die explosively, dispersing carbon, oxygen, silicon and iron into the surrounding gas. Each supernova enriches a region of space, enabling the next generation of stars to form planetary systems and eventually life."}, {"id": "firstns", "animT": 0.32, "t_gyr": 0.202, "cat": "stellar", "sig": 4, "name": "First Neutron Stars and Pulsars", "desc": "Supernovae from the most massive Pop III stars leave neutron stars: the mass of the Sun compressed into a 10-km sphere with density similar to an atomic nucleus. Rapidly rotating neutron stars emit radiation beams as pulsars. Merging neutron stars forge gold and platinum."}, {"id": "firstbh", "animT": 0.33, "t_gyr": 0.25, "cat": "stellar", "sig": 4, "name": "First Stellar Black Holes", "desc": "The heaviest Pop III stars collapse directly into black holes of 10-100 solar masses. These grow rapidly by accretion, becoming the seeds of the supermassive black holes found at galactic centers. Some are detected today as gravitational wave sources by LIGO."}, {"id": "reionbegin", "animT": 0.35, "t_gyr": 0.4, "cat": "cosmic", "sig": 3, "name": "Reionization Begins", "desc": "UV radiation from the first stars starts ionizing the neutral hydrogen fog. Bubbles of ionized gas expand around each star cluster, eventually merging to end the cosmic dark ages permanently."}, {"id": "firstgal", "animT": 0.4, "t_gyr": 0.4, "cat": "stellar", "sig": 5, "name": "First Galaxies Form", "desc": "Small protogalaxies assemble from gas and dark matter within 400 million years of the Big Bang. JWST found galaxy candidates at z greater than 13, within 300 Myr of the Big Bang, far earlier than models predicted. These early galaxies form stars at a furious rate."}, {"id": "firstqso", "animT": 0.43, "t_gyr": 0.7, "cat": "stellar", "sig": 4, "name": "First Quasars Ignite", "desc": "Supermassive black holes begin accreting gas at enormous rates, producing quasars: the most luminous persistent objects in the universe. They outshine entire galaxies, illuminate surrounding gas and drive the final stages of reionization."}, {"id": "reionend", "animT": 0.46, "t_gyr": 0.9, "cat": "cosmic", "sig": 3, "name": "Reionization Ends", "desc": "The last neutral hydrogen regions are ionized by UV radiation from stars and quasars. The universe is now fully transparent to UV light. The cosmic dark ages are permanently over. Roughly 900 million years have elapsed."}, {"id": "peaksfr", "animT": 0.48, "t_gyr": 2.5, "cat": "stellar", "sig": 4, "name": "Peak Star Formation Rate", "desc": "The universe reaches its peak star formation rate around 2-3 billion years after the Big Bang, roughly 10 times the current rate. Massive gas-rich galaxies form hundreds of solar masses of stars per year. This cosmic noon will not return."}, {"id": "mwseed", "animT": 0.5, "t_gyr": 1.5, "cat": "galactic", "sig": 4, "name": "Milky Way Begins Forming", "desc": "The protogalactic cloud that becomes the Milky Way begins to collapse and form the first stars of our galaxy's ancient halo. The oldest stars we can directly observe date from this period. The galaxy grows hierarchically through mergers over billions of years."}, {"id": "sgra", "animT": 0.515, "t_gyr": 2.0, "cat": "galactic", "sig": 4, "name": "Sagittarius A* Grows", "desc": "The Milky Way central supermassive black hole, Sagittarius A*, accumulates mass through accretion and mergers, eventually reaching 4 million solar masses. In 2019 and 2022, the Event Horizon Telescope imaged its shadow directly for the first time."}, {"id": "andromeda", "animT": 0.53, "t_gyr": 3.8, "cat": "galactic", "sig": 3, "name": "Andromeda Galaxy Forms", "desc": "Andromeda (M31), our nearest large galactic neighbor, begins assembling around 10 billion years ago. Today it contains roughly 1 trillion stars. It is approaching the Milky Way at 120 km/s and the two will merge in approximately 4.5 billion years to form Milkomeda."}, {"id": "mwdisk", "animT": 0.57, "t_gyr": 5.8, "cat": "galactic", "sig": 4, "name": "Milky Way Disk Settles", "desc": "The Milky Way thin disk settles into its four-armed spiral: Perseus, Orion, Sagittarius, and Norma-Cygnus Arms. One full rotation takes 225 million years. Our Sun will form in the Orion Arm. The disk is 100,000 light-years across and 1,000 light-years thick."}, {"id": "alphacen", "animT": 0.605, "t_gyr": 8.5, "cat": "stellar", "sig": 3, "name": "Alpha Centauri System Forms", "desc": "Alpha Centauri A and B form around 5.3 billion years ago, 4.37 light-years from Earth. Proxima Centauri, gravitationally bound to the pair at 4.24 light-years, is the nearest individual star to our Sun. Proxima b and d are candidate habitable planets."}, {"id": "sun", "animT": 0.64, "t_gyr": 9.2, "cat": "solar", "sig": 5, "name": "Sun Ignites", "desc": "A dense molecular cloud in the Orion Arm collapses 4.6 billion years ago. The Sun ignites hydrogen fusion. The surrounding protoplanetary disk, containing heavy elements forged in previous stellar generations, will form all the planets within the next 100 million years."}, {"id": "planets", "animT": 0.65, "t_gyr": 9.25, "cat": "solar", "sig": 4, "name": "Solar System Planets Form", "desc": "Dust grains clump into planetesimals and protoplanets. Jupiter and Saturn form quickly from gas before it disperses. The inner rocky planets assemble slowly through collisions. Comets and asteroids deliver water and organic molecules to the inner system."}, {"id": "earth", "animT": 0.658, "t_gyr": 9.35, "cat": "solar", "sig": 5, "name": "Earth Forms", "desc": "Proto-Earth accretes over roughly 20 million years. The surface is a global magma ocean. Dense iron sinks to form the core, lighter silicates form the mantle and crust. Cometary impacts deliver much of Earth's water. The stage is set for the most complex chemistry in the known universe."}, {"id": "moon", "animT": 0.663, "t_gyr": 9.38, "cat": "solar", "sig": 4, "name": "Moon-Forming Impact (Theia)", "desc": "A Mars-sized body (Theia) strikes proto-Earth at a grazing angle. Debris ejected into orbit coalesces into the Moon within thousands of years. The Moon stabilizes Earth's axial tilt, making climate predictable over geological timescales, and creates tidal forces."}, {"id": "lhb", "animT": 0.673, "t_gyr": 9.7, "cat": "solar", "sig": 3, "name": "Late Heavy Bombardment", "desc": "Between 4.1 and 3.8 Gya, intense asteroid impacts reshape the inner solar system, possibly triggered by giant planet migration. The Moon's heavily cratered surface dates from this era. Impacts may have delivered additional water and organics to early Earth."}, {"id": "oceans", "animT": 0.668, "t_gyr": 9.4, "cat": "planetary", "sig": 4, "name": "Stable Liquid Oceans", "desc": "Zircon crystals from Jack Hills, Australia, dated to 4.4 Gya, show liquid water at Earth's surface. Stable oceans establish. Hydrothermal vents provide chemical gradients and free energy that may drive the chemistry leading to self-replication."}, {"id": "firstlife", "animT": 0.69, "t_gyr": 10.0, "cat": "life", "sig": 5, "name": "First Self-Replicating Chemistry", "desc": "The first molecule copies itself with heritable variation. The origin of Darwinian evolution. This is the most profound threshold in the history of the universe, and the deepest unsolved problem in science. All life on Earth descends from this one event."}, {"id": "prokary", "animT": 0.705, "t_gyr": 10.3, "cat": "life", "sig": 4, "name": "First Prokaryotes", "desc": "Microfossils and stromatolites record prokaryotic life by 3.5 Gya. Bacteria and archaea solve virtually every biochemical problem: photosynthesis, nitrogen fixation, chemolithotrophy. They remain the most metabolically diverse organisms ever to live."}, {"id": "goe", "animT": 0.76, "t_gyr": 11.4, "cat": "life", "sig": 4, "name": "Great Oxidation Event", "desc": "Cyanobacteria flood the atmosphere with oxygen 2.4 Gya. Initially catastrophic for anaerobic life, this permanently transforms Earth. Banded iron formations record the global chemical transition. Aerobic metabolism eventually enables complex animal life."}, {"id": "eukary", "animT": 0.778, "t_gyr": 11.8, "cat": "life", "sig": 4, "name": "First Eukaryotes", "desc": "A prokaryote engulfs another bacterium and keeps it alive as a symbiont, creating mitochondria. This endosymbiosis happened essentially once. All animals, plants, fungi and protists descend from it. Eukaryotic cells can grow far larger and more complex."}, {"id": "snowball", "animT": 0.808, "t_gyr": 12.6, "cat": "planetary", "sig": 3, "name": "Snowball Earth", "desc": "Between 720 and 635 Mya, Earth may have been almost entirely covered in ice. These glaciations, possibly caused by the first land plants drawing down CO2, may have provided the selective pressure that drove the evolution of complex multicellular life."}, {"id": "multicell", "animT": 0.83, "t_gyr": 13.0, "cat": "life", "sig": 4, "name": "First Multicellular Life", "desc": "Cells begin cooperating, differentiating, and sacrificing individual reproduction. The Ediacaran fauna (635-538 Mya) are the first complex multicellular organisms: soft-bodied creatures of forms unlike anything alive today. A cell must be willing to die for the organism."}, {"id": "cambrian", "animT": 0.875, "t_gyr": 13.262, "cat": "life", "sig": 5, "name": "Cambrian Explosion", "desc": "Within 25 million years (538-515 Mya), most major animal body plans appear. Eyes, shells, bilateral symmetry, predation. The Burgess Shale and Chengjiang fossils preserve extraordinary records. The template for all complex animal life is set in this brief window."}, {"id": "land", "animT": 0.885, "t_gyr": 13.33, "cat": "life", "sig": 3, "name": "Life Colonises Land", "desc": "Plants colonise land around 470 Mya, transforming atmosphere, climate, and soil. Land vertebrates appear at 375 Mya. Forests draw down CO2, creating the coal deposits that will power human industrialisation hundreds of millions of years later."}, {"id": "dino", "animT": 0.93, "t_gyr": 13.57, "cat": "life", "sig": 3, "name": "Dinosaurs Dominate", "desc": "Dinosaurs first appear 230 Mya and dominate terrestrial ecosystems for 165 million years, longer than mammals have existed. Birds are living dinosaurs, the only lineage to survive the end-Cretaceous extinction. Their reign dwarfs all of human history."}, {"id": "sirius", "animT": 0.932, "t_gyr": 13.562, "cat": "stellar", "sig": 2, "name": "Sirius System Forms", "desc": "Sirius A, the brightest star in Earth's night sky, forms only 240 million years ago. The binary Sirius system is 8.6 light-years away. Sirius A is twice the Sun's mass and 25 times more luminous. Sirius B is a dense white dwarf companion."}, {"id": "eagleneb", "animT": 0.955, "t_gyr": 13.7945, "cat": "stellar", "sig": 3, "name": "Eagle Nebula and Pillars of Creation", "desc": "The Eagle Nebula (M16), 6,500 light-years away, has been actively forming stars for about 5.5 million years. Its Pillars of Creation, towering columns of gas and dust, are forming stars today. JWST revealed warm dust from newly forming protostars within the pillars."}, {"id": "bettelgeuse", "animT": 0.953, "t_gyr": 13.792, "cat": "stellar", "sig": 2, "name": "Betelgeuse Forms", "desc": "Betelgeuse, Orion's red supergiant, is only 8-9 million years old and 700 times the radius of the Sun. It is expected to explode as a supernova within 100,000 years. When it does, it will be briefly visible in daylight from Earth at 700 light-years distance."}, {"id": "impact", "animT": 0.957, "t_gyr": 13.734, "cat": "solar", "sig": 4, "name": "Chicxulub Impact", "desc": "A 10-km asteroid strikes the Yucatan 66 Mya. Wildfires, a decade of darkness, and collapse of photosynthesis kill 75% of all species including all non-avian dinosaurs. Mammals radiate rapidly into the ecological void. Without this event, primates might never have diversified."}, {"id": "orionneb", "animT": 0.966, "t_gyr": 13.797, "cat": "stellar", "sig": 2, "name": "Orion Nebula Active", "desc": "The Orion Nebula (M42), 1,344 light-years away, contains roughly 700 young stars in various stages of formation. The Trapezium cluster at its core ionizes the surrounding gas, creating one of the most photographed stellar nurseries. Active star formation is ongoing today."}, {"id": "primates", "animT": 0.96, "t_gyr": 13.745, "cat": "life", "sig": 3, "name": "Primates Diversify", "desc": "Primates diversify rapidly following the dinosaur extinction. By 55 Mya, early primates are widespread. Apes appear 25 Mya. The human lineage diverges from chimpanzees approximately 7 Mya in Africa. Bipedal walking (Australopithecus) appears by 4 Mya."}, {"id": "homo", "animT": 0.985, "t_gyr": 13.7997, "cat": "life", "sig": 5, "name": "Homo sapiens Emerge", "desc": "Anatomically modern humans emerge in Africa 300,000 years ago. The cognitive revolution 70,000 years ago may relate to the Toba volcanic winter. By 60,000 years ago humans leave Africa and reach every continent. All of recorded history fits in the last 5,000 years."}, {"id": "writing", "animT": 0.993, "t_gyr": 13.79995, "cat": "life", "sig": 4, "name": "Writing and Civilisation", "desc": "Cuneiform in Sumer, hieroglyphs in Egypt, around 5,000 years ago. Writing allows knowledge to accumulate beyond individual memory and lifespan. Mathematics, astronomy, philosophy, law all emerge after writing. All of written history is 1/1,000,000th the age of the universe."}, {"id": "jwst", "animT": 0.999, "t_gyr": 13.8, "cat": "cosmic", "sig": 3, "name": "Modern Observatories", "desc": "JWST (2021) observes galaxies within 300 Myr of the Big Bang. The Event Horizon Telescope images black hole shadows. LIGO detects gravitational waves from merging compact objects. We now observe the universe across virtually its entire history simultaneously."}, {"id": "now", "animT": 1.0, "t_gyr": 13.8, "cat": "life", "sig": 5, "name": "Present Day", "desc": "The universe is 13.8 billion years old. You are made of atoms forged in stellar interiors over billions of years. The observable universe contains roughly 2 trillion galaxies. The far future stretches trillions of years ahead. We are at the beginning of cosmic history."}];
+var CC   = {"cosmic": "#4a88ff", "stellar": "#ffaa44", "galactic": "#cc8822", "solar": "#44cc70", "planetary": "#40b8c0", "life": "#e06080"};
+var PP   = [{"animT": 0.0, "desc": "Quark-Gluon Plasma", "labels": [{"text": "u quark", "color": "#ff3311"}, {"text": "d quark", "color": "#33ff11"}, {"text": "gluon", "color": "#ffaa00"}, {"text": "s quark", "color": "#3355ff"}]}, {"animT": 0.06, "desc": "Protons and Neutrons", "labels": [{"text": "proton p\u207a", "color": "#4488ff"}, {"text": "neutron n", "color": "#889999"}, {"text": "electron e\u207b", "color": "#ffff44"}, {"text": "photon \u03b3", "color": "#ffffff"}]}, {"animT": 0.09, "desc": "Nuclei Forming", "labels": [{"text": "\u00b9H nucleus", "color": "#4499ff"}, {"text": "\u2074He nucleus", "color": "#ffee44"}, {"text": "photon \u03b3", "color": "#ffffff"}]}, {"animT": 0.16, "desc": "Hydrogen and Helium Atoms", "labels": [{"text": "H atom", "color": "#44aaff"}, {"text": "He atom", "color": "#ffee44"}, {"text": "CMB photon", "color": "#ffcc88"}]}, {"animT": 0.22, "desc": "Neutral Gas Cloud", "labels": [{"text": "H gas", "color": "#336688"}, {"text": "He gas", "color": "#887744"}, {"text": "dark matter", "color": "#334455"}]}, {"animT": 0.3, "desc": "Population III Stars", "labels": [{"text": "Pop III star", "color": "#88aaff"}, {"text": "supernova", "color": "#ffcc44"}, {"text": "black hole", "color": "#554433"}, {"text": "neutron star", "color": "#88ddff"}]}, {"animT": 0.4, "desc": "Galaxy Formation", "labels": [{"text": "protogalaxy", "color": "#6688cc"}, {"text": "quasar", "color": "#ffdd44"}, {"text": "galaxy cluster", "color": "#8899bb"}]}, {"animT": 0.57, "desc": "Milky Way", "labels": [{"text": "Milky Way", "color": "#aabbff"}, {"text": "Sgr A*", "color": "#ffaa44"}, {"text": "Andromeda", "color": "#8899cc"}, {"text": "\u03b1 Centauri", "color": "#ffeeaa"}]}, {"animT": 0.64, "desc": "Solar System", "labels": [{"text": "Sol (G2V)", "color": "#ffe060"}, {"text": "Earth", "color": "#4488dd"}, {"text": "Mars", "color": "#cc6644"}, {"text": "Jupiter", "color": "#ccaa88"}]}, {"animT": 0.78, "desc": "Life on Earth", "labels": [{"text": "First life", "color": "#44ddcc"}, {"text": "H\u2082O", "color": "#4488dd"}, {"text": "O\u2082", "color": "#88ccff"}]}, {"animT": 1.0, "desc": "Now", "labels": [{"text": "Homo sapiens", "color": "#cc88ff"}, {"text": "Earth", "color": "#4488dd"}]}];
+
+// Indices into TL rows
+var I_AT=0,I_GYR=1,I_NAME=2,I_R=3,I_BG=4,I_FOG=5;
+
+// ── STATE ──
+var animT=0, targetT=0;
+var playing=false, playSpd=1.0;
+var layers={cosmic:true,stellar:true,solar:true,life:true};
+var showObs=true, showGuides=true, showLbl3d=true;
+var selEv=null;
+var orb={th:0.4,ph:1.0,r:180,isDrag:false,px:0,py:0};
+var hoverEv=null;
+
+// ── THREE SETUP ──
+var mc=document.getElementById('c3d');
+var renderer=new THREE.WebGLRenderer({canvas:mc,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+var scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020409);
+scene.fog=new THREE.FogExp2(0x020409,0.012);
+var cam=new THREE.PerspectiveCamera(55,1,0.005,6000);
+cam.position.set(0,50,180);
+scene.add(new THREE.AmbientLight(0x223344,1.2));
+var ptLight=new THREE.PointLight(0xffd080,4,120);
+ptLight.position.set(0,0,0);
+scene.add(ptLight);
+
+// ── SEEDED RNG ──
+function mkRng(s){var x=s;return function(){x=((x*1664525+1013904223)&0xffffffff)>>>0;return x/0xffffffff;};}
+var R=mkRng(12345);
+
+// ── GUIDE LINES ──
+var guideGrp=new THREE.Group();scene.add(guideGrp);
+var axMat=new THREE.LineBasicMaterial({color:0x223344,transparent:true,opacity:0.4});
+var axL=300;
+[[[-axL,0,0],[axL,0,0]],[[0,-axL/3,0],[0,axL/3,0]],[[0,0,-axL],[0,0,axL]]].forEach(function(pts){
+  guideGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...pts[0]),new THREE.Vector3(...pts[1])]),axMat));
+});
+// Scale rings at r=15,40,80
+[15,40,80].forEach(function(r){
+  var pts=[];for(var i=0;i<=64;i++) pts.push(new THREE.Vector3(Math.cos(i/64*Math.PI*2)*r,0,Math.sin(i/64*Math.PI*2)*r));
+  var m=new THREE.LineBasicMaterial({color:0x334466,transparent:true,opacity:0.15});
+  guideGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),m));
+});
+
+// ── OBSERVABLE UNIVERSE SPHERE ──
+var obsMesh=new THREE.Mesh(
+  new THREE.SphereGeometry(1,32,24),
+  new THREE.MeshBasicMaterial({color:0x3355bb,wireframe:true,transparent:true,opacity:0.07})
+);
+scene.add(obsMesh);
+var obsRing=new THREE.Mesh(
+  new THREE.TorusGeometry(1,0.008,8,80),
+  new THREE.MeshBasicMaterial({color:0x4466cc,transparent:true,opacity:0.2})
+);
+scene.add(obsRing);
+function updateObsSphere(aT){
+  var r=Math.max(0.3,70*Math.pow(aT,0.38));
+  obsMesh.scale.setScalar(r);
+  obsRing.scale.setScalar(r);
+  obsMesh.visible=showObs;
+  obsRing.visible=showObs;
+}
+
+// ── BACKGROUND STARS ──
+var bgG=new THREE.BufferGeometry();
+var bgP=new Float32Array(3500*3);
+for(var i=0;i<3500;i++){bgP[i*3]=(R()-.5)*900;bgP[i*3+1]=(R()-.5)*700;bgP[i*3+2]=(R()-.5)*900;}
+bgG.setAttribute('position',new THREE.BufferAttribute(bgP,3));
+scene.add(new THREE.Points(bgG,new THREE.PointsMaterial({color:0x445566,size:0.45,transparent:true,opacity:0.4})));
+
+// ── MAIN PARTICLE SYSTEM ──
+var N=3500;
+var pGeo=new THREE.BufferGeometry();
+var pPos=new Float32Array(N*3);
+var pCol=new Float32Array(N*3);
+pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+pGeo.setAttribute('color',new THREE.BufferAttribute(pCol,3));
+var pMat=new THREE.PointsMaterial({size:0.28,vertexColors:true,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+var pts=new THREE.Points(pGeo,pMat);
+scene.add(pts);
+
+// Precompute keyframe position arrays
+// KF0: Big Bang cluster r<2
+// KF1: Hadron soup r<4
+// KF2: H/He atoms r~10
+// KF3: Dark ages spreading r~20
+// KF4: First stars clusters
+// KF5: Galaxy web filaments r~50
+// KF6: Single galaxy spiral
+// KF7: Solar neighborhood
+// KF8: Earth scale
+var KF_T=[0,0.06,0.13,0.22,0.30,0.47,0.57,0.64,0.80];
+var KF_POS=[], KF_COL=[];
+
+// KF0: Big Bang
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(1);
+  for(var i=0;i<N;i++){var r=Math.pow(r2(),0.3)*2.2;var t=r2()*Math.PI*2,p=Math.acos(2*r2()-1);
+  a[i*3]=r*Math.sin(p)*Math.cos(t);a[i*3+1]=r*Math.cos(p);a[i*3+2]=r*Math.sin(p)*Math.sin(t);
+  // colors: quarks (red/green) + gluons (orange)
+  var role=Math.floor(r2()*3);
+  if(role===0){c[i*3]=1;c[i*3+1]=0.15;c[i*3+2]=0.05;}
+  else if(role===1){c[i*3]=0.1;c[i*3+1]=1;c[i*3+2]=0.05;}
+  else{c[i*3]=1;c[i*3+1]=0.6;c[i*3+2]=0;}
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+// KF1: Protons/neutrons
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(2);
+  for(var i=0;i<N;i++){var r=Math.pow(r2(),0.4)*4.5;var t=r2()*Math.PI*2,p=Math.acos(2*r2()-1);
+  a[i*3]=r*Math.sin(p)*Math.cos(t);a[i*3+1]=r*Math.cos(p)*0.8;a[i*3+2]=r*Math.sin(p)*Math.sin(t);
+  var role=r2();
+  if(role<0.5){c[i*3]=0.25;c[i*3+1]=0.45;c[i*3+2]=1;}// proton blue
+  else if(role<0.8){c[i*3]=0.5;c[i*3+1]=0.55;c[i*3+2]=0.55;}// neutron grey
+  else{c[i*3]=1;c[i*3+1]=1;c[i*3+2]=0.3;}// photon yellow
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+// KF2: H/He atoms
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(3);
+  for(var i=0;i<N;i++){var r=Math.pow(r2(),0.5)*10;var t=r2()*Math.PI*2,p=Math.acos(2*r2()-1);
+  a[i*3]=r*Math.sin(p)*Math.cos(t);a[i*3+1]=r*Math.cos(p)*0.7;a[i*3+2]=r*Math.sin(p)*Math.sin(t);
+  if(r2()<0.75){c[i*3]=0.2;c[i*3+1]=0.55;c[i*3+2]=1;}// H blue
+  else{c[i*3]=1;c[i*3+1]=0.9;c[i*3+2]=0.2;}// He yellow
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+// KF3: Dark ages gas
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(4);
+  for(var i=0;i<N;i++){var r=5+Math.pow(r2(),0.6)*20;var t=r2()*Math.PI*2,p=Math.acos(2*r2()-1);
+  // slight density variation - seeds of structure
+  var clump=Math.floor(r2()*8);var cth=(clump/8)*Math.PI*2;var cx=Math.cos(cth)*r*0.3,cz=Math.sin(cth)*r*0.3;
+  a[i*3]=cx+r*Math.sin(p)*Math.cos(t)*0.7;a[i*3+1]=r*Math.cos(p)*0.4;a[i*3+2]=cz+r*Math.sin(p)*Math.sin(t)*0.7;
+  c[i*3]=0.1;c[i*3+1]=0.15;c[i*3+2]=0.28;// very dark blue
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+// KF4: First stars
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(5);
+  var scenters=[];for(var s=0;s<10;s++) scenters.push({x:(r2()-.5)*30,y:(r2()-.5)*10,z:(r2()-.5)*30});
+  for(var i=0;i<N;i++){
+    var sc=scenters[Math.floor(r2()*scenters.length)];
+    var role=r2();
+    if(role<0.15){// bright star
+      var r=r2()*0.8;var t=r2()*Math.PI*2,p=Math.acos(2*r2()-1);
+      a[i*3]=sc.x+r*Math.sin(p)*Math.cos(t);a[i*3+1]=sc.y+r*Math.cos(p);a[i*3+2]=sc.z+r*Math.sin(p)*Math.sin(t);
+      c[i*3]=0.6;c[i*3+1]=0.7;c[i*3+2]=1;
+    } else {// nebula gas
+      var r=1+r2()*12;var t=r2()*Math.PI*2,p=Math.acos(2*r2()-1);
+      a[i*3]=sc.x+r*Math.sin(p)*Math.cos(t);a[i*3+1]=sc.y+r*Math.cos(p)*0.3;a[i*3+2]=sc.z+r*Math.sin(p)*Math.sin(t);
+      c[i*3]=0.15+r2()*0.15;c[i*3+1]=0.2+r2()*0.15;c[i*3+2]=0.35+r2()*0.2;
+    }
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+// KF5: Galaxy web
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(6);
+  var filaments=12;
+  for(var i=0;i<N;i++){
+    var f=Math.floor(r2()*filaments);var fth=(f/filaments)*Math.PI*2;var fph=Math.acos(2*((f/filaments*0.7)+0.15)-1);
+    var fc={x:Math.sin(fph)*Math.cos(fth)*28,y:Math.cos(fph)*16,z:Math.sin(fph)*Math.sin(fth)*28};
+    var spread=3+r2()*8;
+    a[i*3]=fc.x+(r2()-.5)*spread*1.8;a[i*3+1]=fc.y+(r2()-.5)*spread*0.6;a[i*3+2]=fc.z+(r2()-.5)*spread*1.8;
+    c[i*3]=0.35+r2()*0.3;c[i*3+1]=0.38+r2()*0.25;c[i*3+2]=0.55+r2()*0.3;
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+// KF6: Single galaxy (Milky Way spiral)
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(7);
+  var arms=4;
+  for(var i=0;i<N;i++){
+    var ai=i%arms;var t=Math.pow(r2(),0.55);var angle=(ai/arms)*Math.PI*2+t*Math.PI*2.4;
+    var r=t*28;var spread=0.3+t*2.2;
+    a[i*3]=Math.cos(angle)*r+(r2()-.5)*spread;a[i*3+1]=(r2()-.5)*0.5;a[i*3+2]=Math.sin(angle)*r+(r2()-.5)*spread;
+    var br=0.6+t*0.4;c[i*3]=0.5*br;c[i*3+1]=0.52*br;c[i*3+2]=0.8*br;
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+// KF7: Solar neighborhood
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(8);
+  for(var i=0;i<N;i++){var r=0.5+r2()*12;var t=r2()*Math.PI*2,p=Math.acos(2*r2()-1);
+  a[i*3]=r*Math.sin(p)*Math.cos(t);a[i*3+1]=r*Math.cos(p)*0.3;a[i*3+2]=r*Math.sin(p)*Math.sin(t);
+  c[i*3]=0.5+r2()*0.4;c[i*3+1]=0.5+r2()*0.35;c[i*3+2]=0.4+r2()*0.3;
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+// KF8: Earth scale (particles faded out)
+(function(){var a=new Float32Array(N*3),c=new Float32Array(N*3);var r2=mkRng(9);
+  for(var i=0;i<N;i++){var r=30+r2()*80;var t=r2()*Math.PI*2,p=Math.acos(2*r2()-1);
+  a[i*3]=r*Math.sin(p)*Math.cos(t);a[i*3+1]=r*Math.cos(p);a[i*3+2]=r*Math.sin(p)*Math.sin(t);
+  c[i*3]=0.1;c[i*3+1]=0.12;c[i*3+2]=0.18;
+  }KF_POS.push(a);KF_COL.push(c);})();
+
+function lerpParticles(aT){
+  var ki=0;for(;ki<KF_T.length-2&&aT>KF_T[ki+1];ki++);
+  var t0=KF_T[ki],t1=KF_T[ki+1];
+  var alpha=t1>t0?(aT-t0)/(t1-t0):0;
+  alpha=Math.max(0,Math.min(1,alpha));
+  var pa=KF_POS[ki],pb=KF_POS[ki+1],ca=KF_COL[ki],cb=KF_COL[ki+1];
+  for(var j=0;j<N*3;j++){
+    pPos[j]=pa[j]*(1-alpha)+pb[j]*alpha;
+    pCol[j]=ca[j]*(1-alpha)+cb[j]*alpha;
+  }
+  pGeo.attributes.position.needsUpdate=true;
+  pGeo.attributes.color.needsUpdate=true;
+  pMat.opacity=aT>0.72?Math.max(0.05,1-(aT-0.72)/0.2):1.0;
+}
+
+// ── SOLAR SYSTEM ──
+var solarGrp=new THREE.Group();scene.add(solarGrp);
+var sunMesh=new THREE.Mesh(new THREE.SphereGeometry(0.9,16,16),new THREE.MeshBasicMaterial({color:0xffe060}));
+var earthMesh=new THREE.Mesh(new THREE.SphereGeometry(0.52,16,16),new THREE.MeshBasicMaterial({color:0x1a4a9a}));
+var moonMesh=new THREE.Mesh(new THREE.SphereGeometry(0.14,8,8),new THREE.MeshBasicMaterial({color:0xb8b4a8}));
+var atm=new THREE.Mesh(new THREE.SphereGeometry(0.62,16,16),new THREE.MeshBasicMaterial({color:0x4080ff,transparent:true,opacity:0.07,side:THREE.BackSide}));
+solarGrp.add(sunMesh,earthMesh,moonMesh,atm);
+function mkOrbit(r){var p=[];for(var i=0;i<=80;i++) p.push(new THREE.Vector3(Math.cos(i/80*Math.PI*2)*r,0,Math.sin(i/80*Math.PI*2)*r));return new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),new THREE.LineBasicMaterial({color:0x334455,transparent:true,opacity:0.25}));}
+var pdata=[{a:1.8,col:0x999988},{a:2.9,col:0xddcc88},{a:4.4,col:0x4488dd},{a:6.2,col:0xcc6644},{a:11,col:0xddaa88},{a:15,col:0xddcc88}];
+var pmeshes=[];
+pdata.forEach(function(p){
+  var m=new THREE.Mesh(new THREE.SphereGeometry(p.a<5?0.1:0.3,8,8),new THREE.MeshBasicMaterial({color:p.col}));
+  m.userData={a:p.a,angle:R()*Math.PI*2};pmeshes.push(m);solarGrp.add(m);solarGrp.add(mkOrbit(p.a));
+});
+solarGrp.add(mkOrbit(4.4));
+function mkGlowSpr(col,sz){
+  var cv=document.createElement('canvas');cv.width=cv.height=64;
+  var cx2=cv.getContext('2d');
+  var g=cx2.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,'rgba('+col[0]+','+col[1]+','+col[2]+',1)');
+  g.addColorStop(0.5,'rgba('+col[0]+','+col[1]+','+col[2]+',0.25)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  cx2.fillStyle=g;cx2.fillRect(0,0,64,64);
+  var s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+  s.scale.set(sz,sz,sz);return s;
+}
+var sunGlow=mkGlowSpr([255,220,80],5);solarGrp.add(sunGlow);
+var earthGlow=mkGlowSpr([68,136,221],2.2);earthGlow.position.set(4.4,0,0);solarGrp.add(earthGlow);
+var earthAngle=0.8,moonAngle=0;
+
+// ── LABEL CANVAS OVERLAY ──
+var lblCv=document.getElementById('lblcanvas');
+var lblCtx=lblCv.getContext('2d');
+var activeLabels=[];
+
+function setLabelsForPhase(aT){
+  // Find current phase
+  var ph=PP[0];
+  for(var i=0;i<PP.length-1;i++) if(aT>=PP[i].animT) ph=PP[i];
+  activeLabels=[];
+  if(!showLbl3d) return;
+  // Place labels at representative positions from current particle keyframe
+  var ki=0;for(;ki<KF_T.length-2&&aT>KF_T[ki+1];ki++);
+  var pA=KF_POS[ki];
+  var lblData=ph.labels;
+  var step=Math.floor(N/lblData.length);
+  lblData.forEach(function(lbl,idx){
+    var pi=(idx*step+Math.floor(step*0.4))*3;
+    activeLabels.push({
+      pos:new THREE.Vector3(pA[pi],pA[pi+1],pA[pi+2]),
+      text:lbl.text,
+      color:lbl.color
+    });
+  });
+  // Also add solar system labels when visible
+  if(aT>0.64){
+    activeLabels.push({pos:new THREE.Vector3(0,1.2,0),text:"Sol",color:"#ffe060"});
+    if(aT>0.66) activeLabels.push({pos:new THREE.Vector3(4.4,0.7,0),text:"Earth",color:"#4488dd"});
+  }
+}
+
+var _lastPhaseLabelT=-1;
+function drawLabels(){
+  lblCtx.clearRect(0,0,lblCv.width,lblCv.height);
+  if(!showLbl3d||activeLabels.length===0) return;
+  activeLabels.forEach(function(lbl){
+    var p=lbl.pos.clone();
+    // Apply solar group scale if needed
+    if(lbl.text==="Sol"||lbl.text==="Earth"){
+      var ss=Math.max(0.05,orb.r/40);
+      p.multiplyScalar(ss);
+    }
+    p.project(cam);
+    if(p.z>=1) return;
+    var sx=(p.x*0.5+0.5)*lblCv.width;
+    var sy=(-p.y*0.5+0.5)*lblCv.height;
+    if(sx<0||sx>lblCv.width||sy<0||sy>lblCv.height) return;
+    lblCtx.font='300 8px "IBM Plex Mono",monospace';
+    lblCtx.fillStyle='rgba(0,0,0,0.55)';
+    var tw=lblCtx.measureText(lbl.text).width;
+    lblCtx.fillRect(sx+5,sy-9,tw+4,11);
+    lblCtx.fillStyle=lbl.color;
+    lblCtx.fillText(lbl.text,sx+7,sy);
+    // Dot at particle position
+    lblCtx.beginPath();
+    lblCtx.arc(sx,sy,2,0,Math.PI*2);
+    lblCtx.fillStyle=lbl.color+'88';
+    lblCtx.fill();
+    // Line to label
+    lblCtx.strokeStyle=lbl.color+'44';
+    lblCtx.lineWidth=0.5;
+    lblCtx.beginPath();
+    lblCtx.moveTo(sx,sy);
+    lblCtx.lineTo(sx+6,sy);
+    lblCtx.stroke();
+  });
+}
+
+// ── UI HELPERS ──
+function getTlKfInterp(aT){
+  var i=0;for(;i<TL.length-2&&aT>TL[i+1][I_AT];i++);
+  var k0=TL[i],k1=TL[i+1];
+  var a=k1[I_AT]>k0[I_AT]?(aT-k0[I_AT])/(k1[I_AT]-k0[I_AT]):0;
+  return{k0:k0,k1:k1,a:Math.max(0,Math.min(1,a))};
+}
+function lerp(a,b,t){return a+(b-a)*t;}
+function lerpBgHex(hex1,hex2,t){
+  var r1=(hex1>>16)&0xff,g1=(hex1>>8)&0xff,b1=hex1&0xff;
+  var r2=(hex2>>16)&0xff,g2=(hex2>>8)&0xff,b2=hex2&0xff;
+  return((Math.round(r1+(r2-r1)*t)<<16)|(Math.round(g1+(g2-g1)*t)<<8)|Math.round(b1+(b2-b1)*t));
+}
+function getEraColor(name){
+  var map={"Quark-Gluon Plasma":"#ff4422","Protons Form":"#ff8844","Nucleosynthesis":"#ffcc44",
+    "CMB Released":"#ffee88","Dark Ages":"#334466","First Stars Ignite":"#88aaff",
+    "First Galaxies":"#5577dd","Galaxy Web":"#4466bb","Milky Way Disk":"#44cc88",
+    "Sun Ignites":"#ffe060","Oceans Form":"#44aacc","First Life":"#44ddcc",
+    "Great Oxidation":"#44cc88","Complex Life":"#88ee44","Cambrian Explosion":"#aaee44",
+    "Dinosaurs":"#bbdd44","Mass Extinction":"#ee8844","Homo sapiens":"#cc88ff","Now":"#ddbbff"};
+  return map[name]||"#8899aa";
+}
+function fmtGyr(g){
+  if(g<1e-15) return "Planck era";
+  if(g<1e-12) return (g*1e15).toFixed(1)+" fs";
+  if(g<1e-9) return (g*1e12).toFixed(1)+" ps";
+  if(g<1e-6) return (g*1e9).toFixed(0)+" ns";
+  if(g<1e-3) return (g*1e6).toFixed(0)+" μs";
+  if(g<1)    return (g*1e3).toFixed(0)+" Myr";
+  return g.toFixed(2)+" Gyr";
+}
+function fmtGyrShort(g){
+  if(g<1e-6) return (g*1e9).toFixed(0)+"ns";
+  if(g<1e-3) return (g*1e6).toFixed(0)+"μs";
+  if(g<1) return (g*1e3).toFixed(1)+"Myr";
+  return g.toFixed(2)+"Gyr";
+}
+function animTToGyr(aT){
+  for(var i=0;i<TL.length-1;i++){
+    if(aT>=TL[i][I_AT]&&aT<=TL[i+1][I_AT]){
+      var a=(aT-TL[i][I_AT])/(TL[i+1][I_AT]-TL[i][I_AT]);
+      return TL[i][I_GYR]+(TL[i+1][I_GYR]-TL[i][I_GYR])*a;
+    }
+  }
+  return TL[TL.length-1][I_GYR];
+}
+
+// ── PHASE LEGEND UPDATE ──
+function updatePhaseLegend(aT){
+  var ph=PP[0];for(var i=0;i<PP.length-1;i++) if(aT>=PP[i].animT) ph=PP[i];
+  var cont=document.getElementById('phlegend');
+  cont.innerHTML='<div style="font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:5px;">Particles</div>';
+  ph.labels.forEach(function(lbl){
+    var row=document.createElement('div');row.className='phrow';
+    row.innerHTML='<span class="phswatch" style="background:'+lbl.color+'"></span><span class="phtext">'+lbl.text+'</span>';
+    cont.appendChild(row);
+  });
+}
+
+// ── UI UPDATE ──
+function updateUI(aT){
+  var ip=getTlKfInterp(aT);
+  var gyr=lerp(ip.k0[I_GYR],ip.k1[I_GYR],ip.a);
+  var pct=gyr/13.8*100;
+  document.getElementById('ername').textContent=ip.k0[I_NAME];
+  document.getElementById('ername').style.color=getEraColor(ip.k0[I_NAME])+'cc';
+  document.getElementById('riname').textContent=ip.k0[I_NAME];
+  document.getElementById('ritime').textContent=fmtGyr(gyr)+" after Big Bang";
+  // desc from events
+  var nearEv=null,nearD=1;
+  EVS.forEach(function(ev){var d=Math.abs(ev.animT-aT);if(d<nearD){nearD=d;nearEv=ev;}});
+  if(nearEv&&nearD<0.05) document.getElementById('ridesc').textContent=nearEv.desc;
+  var ps=pct<0.0001?pct.toExponential(2)+"%":pct<0.01?pct.toFixed(6)+"%":pct<1?pct.toFixed(4)+"%":pct.toFixed(2)+"%";
+  document.getElementById('pctval').textContent=ps;
+  document.getElementById('cosmictime').textContent="T + "+fmtGyrShort(gyr);
+  var badges={"Quark-Gluon Plasma":"Quark Scale","Protons Form":"Hadron Scale","Nucleosynthesis":"Nuclear Scale","CMB Released":"Atom Scale","Dark Ages":"Cosmic Scale","First Stars Ignite":"Megaparsec Scale","First Galaxies":"Galaxy Scale","Galaxy Web":"Cluster Scale","Milky Way Disk":"Galactic Scale","Sun Ignites":"Stellar Scale","Oceans Form":"Planetary Scale","First Life":"Molecular Scale","Great Oxidation":"Surface Scale","Complex Life":"Organismal Scale","Cambrian Explosion":"Ocean Scale","Dinosaurs":"Terrestrial Scale","Mass Extinction":"Regional Scale","Homo sapiens":"Human Scale","Now":"Human Scale"};
+  document.getElementById('scalebadge').textContent=badges[ip.k0[I_NAME]]||"Cosmic Scale";
+  // era list highlight
+  document.querySelectorAll('.ebtn').forEach(function(el,i){el.classList.toggle('cur',TL[i]&&TL[i][I_NAME]===ip.k0[I_NAME]);});
+  if(aT-_lastPhaseLabelT>0.015||_lastPhaseLabelT<0){
+    setLabelsForPhase(aT);
+    updatePhaseLegend(aT);
+    _lastPhaseLabelT=aT;
+  }
+}
+var _lastPhaseLabelT=-1;
+
+// ── SCENE UPDATE ──
+var eaT2=0;
+function updateScene(aT){
+  var ip=getTlKfInterp(aT);
+  var camR=lerp(ip.k0[I_R],ip.k1[I_R],ip.a);
+  orb.r=camR;
+  var bgCol=lerpBgHex(ip.k0[I_BG],ip.k1[I_BG],ip.a);
+  scene.background.set(bgCol);
+  scene.fog.color.set(bgCol);
+  scene.fog.density=lerp(ip.k0[I_FOG],ip.k1[I_FOG],ip.a);
+  lerpParticles(aT);
+  updateObsSphere(aT);
+  guideGrp.visible=showGuides;
+  ptLight.intensity=Math.max(0.5,4*(1-aT*0.65));
+  ptLight.distance=Math.max(4,120*(1-aT*0.5));
+
+  // Solar system
+  var solarAlpha=Math.max(0,Math.min(1,(aT-0.62)/0.1));
+  solarGrp.visible=solarAlpha>0.01;
+  if(solarAlpha>0){
+    var ss=Math.max(0.04,camR/35);
+    solarGrp.scale.setScalar(ss);
+    eaT2+=0.005;
+    earthAngle+=0.010;moonAngle+=0.038;
+    earthMesh.position.set(Math.cos(earthAngle)*4.4,0,Math.sin(earthAngle)*4.4);
+    earthGlow.position.copy(earthMesh.position);
+    atm.position.copy(earthMesh.position);
+    moonMesh.position.set(earthMesh.position.x+Math.cos(moonAngle)*0.8,0,earthMesh.position.z+Math.sin(moonAngle)*0.8);
+    pmeshes.forEach(function(pm){pm.userData.angle+=0.004/(pm.userData.a/4);pm.position.set(Math.cos(pm.userData.angle)*pm.userData.a,0,Math.sin(pm.userData.angle)*pm.userData.a);});
+    var earthZoom=Math.max(0,Math.min(1,(aT-0.88)/0.08));
+    pmeshes.forEach(function(pm){pm.material.opacity=1-earthZoom;pm.material.transparent=earthZoom>0;});
+  }
+}
+
+// ── CAMERA ──
+function updateCamera(){
+  if(!orb.isDrag) orb.th+=0.0005;
+  var x=orb.r*Math.sin(orb.ph)*Math.cos(orb.th);
+  var y=orb.r*Math.cos(orb.ph);
+  var z=orb.r*Math.sin(orb.ph)*Math.sin(orb.th);
+  cam.position.lerp(new THREE.Vector3(x,y,z),0.05);
+  cam.lookAt(0,0,0);
+}
+
+// ── MAIN LOOP ──
+function frame(){
+  requestAnimationFrame(frame);
+  if(playing){targetT=Math.min(1,targetT+0.00012*playSpd);if(targetT>=1){targetT=1;togglePlay();}}
+  animT+=(targetT-animT)*0.035;
+  updateScene(animT);
+  updateCamera();
+  renderer.render(scene,cam);
+  drawLabels();
+  drawTl();
+  updateUI(animT);
+}
+
+// ── SINGLE TIMELINE STRIP ──
+var tlCv=document.getElementById('tlcanvas');
+var tlCtx=tlCv.getContext('2d');
+var tlHoverX=-1,tlHoverEv=null;
+
+function drawTl(){
+  var W=tlCv.width,H=tlCv.height;
+  if(!W||!H) return;
+  var lpad=5,rpad=5,aW=W-lpad-rpad;
+  var midY=H*0.4;
+
+  tlCtx.clearRect(0,0,W,H);
+  tlCtx.fillStyle='#020409';tlCtx.fillRect(0,0,W,H);
+
+  function aToX(a){return lpad+(a)*aW;}
+
+  // ERA BANDS
+  for(var i=0;i<TL.length-1;i++){
+    var x0=aToX(TL[i][I_AT]),x1=aToX(TL[i+1][I_AT]);
+    var col=getEraColor(TL[i][I_NAME]);
+    tlCtx.fillStyle=col+'18';
+    tlCtx.fillRect(x0,0,x1-x0,H);
+    tlCtx.strokeStyle=col+'33';tlCtx.lineWidth=0.5;
+    tlCtx.beginPath();tlCtx.moveTo(x0,0);tlCtx.lineTo(x0,H);tlCtx.stroke();
+  }
+
+  // BASELINE
+  tlCtx.strokeStyle='rgba(80,120,210,0.2)';tlCtx.lineWidth=1;
+  tlCtx.beginPath();tlCtx.moveTo(lpad,midY);tlCtx.lineTo(W-rpad,midY);tlCtx.stroke();
+
+  // EVENT SPIKES (bumps)
+  var catVis={cosmic:layers.cosmic,stellar:layers.stellar,galactic:layers.stellar,solar:layers.solar,planetary:layers.solar,life:layers.life};
+  EVS.forEach(function(ev){
+    if(!catVis[ev.cat]) return;
+    var x=aToX(ev.animT);
+    var col=CC[ev.cat]||'#8899aa';
+    var isSel=selEv&&selEv.id===ev.id;
+    var isHov=tlHoverEv&&tlHoverEv.id===ev.id;
+    var spikeH=[0,8,13,18,25,35][Math.min(ev.sig,5)];
+    if(isSel||isHov) spikeH*=1.5;
+
+    // Spike (rounded top)
+    tlCtx.strokeStyle=isSel||isHov?col:col+'99';
+    tlCtx.lineWidth=isSel?2:1;
+    tlCtx.beginPath();tlCtx.moveTo(x,midY);tlCtx.lineTo(x,midY-spikeH+3);tlCtx.stroke();
+    tlCtx.beginPath();tlCtx.arc(x,midY-spikeH,2,0,Math.PI*2);
+    tlCtx.fillStyle=isSel||isHov?col:col+'aa';tlCtx.fill();
+
+    // Always label sig>=5
+    if(ev.sig>=5||(isHov&&ev.sig>=3)){
+      tlCtx.font=(isSel?'400':'300')+' 6.5px "IBM Plex Mono",monospace';
+      tlCtx.fillStyle=col+'dd';
+      tlCtx.textAlign='center';
+      var shortName=ev.name.length>18?ev.name.substring(0,17)+'..':ev.name;
+      tlCtx.fillText(shortName,x,midY-spikeH-5);
+    }
+  });
+
+  // LOG AXIS TICKS
+  var ticks=[0.06,0.16,0.30,0.40,0.50,0.57,0.64,0.70,0.76,0.83,0.93,0.985,1.0];
+  ticks.forEach(function(a){
+    var x=aToX(a);
+    tlCtx.strokeStyle='rgba(80,120,210,0.1)';tlCtx.lineWidth=0.5;
+    tlCtx.beginPath();tlCtx.moveTo(x,midY-1);tlCtx.lineTo(x,H-1);tlCtx.stroke();
+    var gyr=animTToGyr(a);
+    tlCtx.font='300 5.5px "IBM Plex Mono",monospace';
+    tlCtx.fillStyle='rgba(80,120,210,0.3)';tlCtx.textAlign='center';
+    tlCtx.fillText(fmtGyrShort(gyr),x,H-3);
+  });
+
+  // PLAYHEAD
+  var phX=aToX(animT);
+  tlCtx.strokeStyle='rgba(255,220,80,0.9)';tlCtx.lineWidth=1.5;
+  tlCtx.setLineDash([2,2]);
+  tlCtx.beginPath();tlCtx.moveTo(phX,0);tlCtx.lineTo(phX,H);tlCtx.stroke();
+  tlCtx.setLineDash([]);
+  tlCtx.fillStyle='rgba(255,220,80,.9)';
+  tlCtx.beginPath();tlCtx.moveTo(phX-4,0);tlCtx.lineTo(phX+4,0);tlCtx.lineTo(phX,6);tlCtx.fill();
+}
+
+// TL hover/click
+function tlHitTest(mx){
+  var W=tlCv.width,lpad=5,aW=W-10;
+  var aX=Math.max(0,Math.min(1,(mx-lpad)/aW));
+  var best=null,bestD=0.018;
+  EVS.forEach(function(ev){var d=Math.abs(ev.animT-aX);if(d<bestD){bestD=d;best=ev;}});
+  return{ev:best,aX:aX};
+}
+
+tlCv.addEventListener('mousemove',function(e){
+  var r=tlCv.getBoundingClientRect();
+  var res=tlHitTest(e.clientX-r.left);
+  tlHoverEv=res.ev;
+  var tt=document.getElementById('tltt');
+  if(res.ev){
+    tt.style.display='block';
+    tt.style.left=(e.clientX+12)+'px';
+    tt.style.top=(e.clientY-40)+'px';
+    document.getElementById('ttname').textContent=res.ev.name;
+    document.getElementById('ttinfo').textContent=fmtGyr(res.ev.t_gyr)+' after BB';
+    document.getElementById('ttiicon').onclick=function(){selectEv(res.ev);};
+    tlCv.style.cursor='pointer';
+  } else {
+    tt.style.display='none';
+    tlCv.style.cursor='crosshair';
+  }
+});
+tlCv.addEventListener('mouseleave',function(){tlHoverEv=null;document.getElementById('tltt').style.display='none';});
+
+var tlIsDown=false;
+tlCv.addEventListener('mousedown',function(e){
+  tlIsDown=true;
+  var r=tlCv.getBoundingClientRect();
+  var res=tlHitTest(e.clientX-r.left);
+  if(res.ev){selectEv(res.ev);}
+  else{targetT=Math.max(0,Math.min(1,res.aX));}
+});
+tlCv.addEventListener('mousemove',function(e){
+  if(!tlIsDown) return;
+  var r=tlCv.getBoundingClientRect();
+  var res=tlHitTest(e.clientX-r.left);
+  targetT=Math.max(0,Math.min(1,res.aX));
+});
+window.addEventListener('mouseup',function(){tlIsDown=false;});
+tlCv.addEventListener('touchstart',function(e){var r=tlCv.getBoundingClientRect();var res=tlHitTest(e.touches[0].clientX-r.left);if(res.ev)selectEv(res.ev);else targetT=res.aX;},{passive:true});
+tlCv.addEventListener('touchmove',function(e){var r=tlCv.getBoundingClientRect();targetT=Math.max(0,Math.min(1,(e.touches[0].clientX-r.left-5)/(tlCv.width-10)));},{passive:true});
+
+function selectEv(ev){
+  selEv=ev;targetT=ev.animT;
+  document.getElementById('selname').textContent=ev.name;
+  document.getElementById('selname').style.color=CC[ev.cat]||'var(--brt)';
+  document.getElementById('selt').textContent=fmtGyr(ev.t_gyr)+' after Big Bang';
+  var pct=ev.t_gyr/13.8*100;
+  document.getElementById('selpct').textContent='Cosmic time elapsed: '+(pct<0.0001?pct.toExponential(3):pct.toFixed(6))+'%';
+  document.getElementById('selpct').style.color=CC[ev.cat]||'var(--txt)';
+  document.getElementById('seldesc').textContent=ev.desc;
+}
+
+// ── MAIN VIEWPORT INTERACTION ──
+mc.addEventListener('mousedown',function(e){orb.isDrag=true;orb.px=e.clientX;orb.py=e.clientY;document.body.style.cursor='grabbing';});
+window.addEventListener('mouseup',function(){orb.isDrag=false;document.body.style.cursor='';});
+mc.addEventListener('mousemove',function(e){
+  if(!orb.isDrag) return;
+  orb.th-=(e.clientX-orb.px)*0.005;
+  orb.ph=Math.max(0.1,Math.min(Math.PI-.1,orb.ph-(e.clientY-orb.py)*0.004));
+  orb.px=e.clientX;orb.py=e.clientY;
+});
+mc.addEventListener('wheel',function(e){
+  e.preventDefault();
+  orb.r=Math.max(0.8,Math.min(400,orb.r+e.deltaY*0.04));
+},{passive:false});
+mc.addEventListener('touchstart',function(e){orb.isDrag=true;orb.px=e.touches[0].clientX;orb.py=e.touches[0].clientY;},{passive:true});
+mc.addEventListener('touchmove',function(e){
+  if(!orb.isDrag) return;
+  orb.th-=(e.touches[0].clientX-orb.px)*0.005;
+  orb.ph=Math.max(0.1,Math.min(Math.PI-.1,orb.ph-(e.touches[0].clientY-orb.py)*0.004));
+  orb.px=e.touches[0].clientX;orb.py=e.touches[0].clientY;
+},{passive:true});
+mc.addEventListener('touchend',function(){orb.isDrag=false;});
+
+// ── PLAYBACK ──
+function togglePlay(){
+  playing=!playing;
+  var b=document.getElementById('pbtn');
+  if(playing){b.textContent='⏸ Pause';b.classList.add('on');}
+  else{b.textContent='▶ Begin Journey';b.classList.remove('on');}
+}
+function setSpd(v){playSpd=parseFloat(v);}
+
+// ── TOGGLES ──
+function tog(cat){layers[cat]=!layers[cat];var p=document.getElementById('p-'+cat);if(p)p.className='pill '+(layers[cat]?'on':'off');}
+function togObs(){showObs=!showObs;document.getElementById('p-obs').className='pill '+(showObs?'on':'off');}
+function togGuides(){showGuides=!showGuides;document.getElementById('p-guides').className='pill '+(showGuides?'on':'off');}
+function togLabels3d(){showLbl3d=!showLbl3d;document.getElementById('p-lbl3d').className='pill '+(showLbl3d?'on':'off');if(!showLbl3d)lblCtx.clearRect(0,0,lblCv.width,lblCv.height);}
+
+// ── ERA LIST ──
+function buildEraList(){
+  var cont=document.getElementById('eralist');
+  TL.forEach(function(kf,i){
+    var div=document.createElement('div');div.className='ebtn';
+    var col=getEraColor(kf[I_NAME]);
+    div.innerHTML='<span class="edot" style="background:'+col+'"></span><span class="elbl">'+kf[I_NAME]+'</span>';
+    div.onclick=function(){targetT=kf[I_AT];};
+    cont.appendChild(div);
+  });
+}
+
+// ── RESIZE ──
+function resize(){
+  var vp=document.getElementById('vp');
+  mc.width=vp.clientWidth;mc.height=vp.clientHeight;
+  lblCv.width=mc.width;lblCv.height=mc.height;
+  cam.aspect=mc.width/mc.height;cam.updateProjectionMatrix();
+  renderer.setSize(mc.width,mc.height,false);
+  tlCv.width=tlCv.parentElement.clientWidth;
+  tlCv.height=tlCv.parentElement.clientHeight;
+}
+window.addEventListener('resize',resize);
+resize();
+
+// ── INIT ──
+buildEraList();
+updateScene(0);updateUI(0);
+frame();
+</script>
+</body>
+</html>

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Timeline - 13.8 Billion Years</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap');
+:root{--bg:#030507;--panel:rgba(3,6,12,0.96);--border:rgba(120,160,220,0.1);--text:#a0b4cc;--bright:#dce8ff;--muted:#3a4858;--serif:'Playfair Display',serif;--mono:'IBM Plex Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);overflow:hidden;width:100vw;height:100vh;}
+#c{display:block;position:fixed;inset:0;}
+#header{position:fixed;top:0;left:0;right:280px;z-index:30;padding:14px 20px 10px;background:linear-gradient(to bottom,rgba(3,5,7,.98) 0%,transparent 100%);pointer-events:none;}
+#header h1{font-family:var(--serif);font-weight:400;font-size:18px;color:var(--bright);}
+#header .sub{font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:3px;}
+#inspector{position:fixed;top:0;right:0;bottom:0;width:280px;background:var(--panel);border-left:1px solid var(--border);padding:16px 18px;overflow-y:auto;z-index:30;}
+#insp-idle{font-size:9px;color:var(--muted);margin-top:60px;line-height:1.8;letter-spacing:.06em;}
+#insp-content{display:none;}
+#insp-cat{font-size:7px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px;}
+#insp-name{font-family:var(--serif);font-size:18px;color:var(--bright);line-height:1.2;margin-bottom:4px;}
+#insp-t{font-size:9px;color:var(--muted);margin-bottom:12px;}
+.insp-div{border-top:1px solid var(--border);padding-top:10px;margin-top:10px;}
+.insp-lbl{font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+#insp-desc{font-size:9px;color:rgba(160,180,204,.75);line-height:1.65;}
+#scale-bar{position:fixed;bottom:18px;left:20px;right:300px;z-index:30;pointer-events:none;}
+#scale-text{font-size:8px;letter-spacing:.1em;color:var(--muted);text-align:center;margin-bottom:5px;}
+#scale-track{height:3px;background:rgba(255,255,255,.06);border-radius:2px;position:relative;}
+#scale-now{position:absolute;right:0;height:100%;background:rgba(255,100,80,.5);border-radius:2px;transition:width .4s;}
+#nav-btns{position:fixed;bottom:18px;right:300px;z-index:30;display:flex;gap:5px;transform:translateX(-100%);margin-right:10px;}
+.nav-btn{font-family:var(--mono);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:var(--text);background:rgba(120,160,220,.07);border:1px solid var(--border);border-radius:2px;padding:5px 8px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.nav-btn:hover{background:rgba(120,160,220,.18);color:var(--bright);}
+.nav-btn.active{background:rgba(120,160,220,.18);color:var(--bright);border-color:rgba(120,160,220,.3);}
+#tooltip{position:fixed;z-index:50;background:rgba(3,6,12,.94);border:1px solid var(--border);border-radius:2px;padding:5px 9px;pointer-events:none;display:none;}
+#tt-name{font-size:9px;color:var(--bright);}
+#tt-t{font-size:7px;color:var(--muted);margin-top:2px;}
+#help{position:fixed;bottom:52px;left:50%;transform:translateX(-50%);z-index:30;font-size:8px;color:var(--muted);letter-spacing:.1em;pointer-events:none;text-align:center;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="header"><h1>Cosmic Timeline</h1><div class="sub">Big Bang &rarr; Homo sapiens &middot; 13.8 Billion Years &middot; Logarithmic Scale</div></div>
+<div id="inspector">
+  <div id="insp-idle">Click any event node to inspect it.<br><br>Scroll or drag to zoom and pan.<br><br>Use the preset buttons below to jump to key scales.</div>
+  <div id="insp-content">
+    <div id="insp-cat"></div>
+    <div id="insp-name"></div>
+    <div id="insp-t"></div>
+    <div class="insp-div"><div class="insp-lbl">What happened</div><div id="insp-desc"></div></div>
+    <div class="insp-div" id="insp-scale-block">
+      <div class="insp-lbl">Scale perspective</div>
+      <div id="insp-scale-text" style="font-size:9px;color:rgba(160,180,204,.6);line-height:1.65;"></div>
+    </div>
+  </div>
+</div>
+<div id="scale-bar">
+  <div id="scale-text">Viewing: full universe</div>
+  <div id="scale-track"><div id="scale-now"></div></div>
+</div>
+<div id="nav-btns">
+  <button class="nav-btn active" onclick="setView(0)">Full Universe</button>
+  <button class="nav-btn" onclick="setView(1)">Galaxy Era</button>
+  <button class="nav-btn" onclick="setView(2)">Solar System</button>
+  <button class="nav-btn" onclick="setView(3)">Life</button>
+  <button class="nav-btn" onclick="setView(4)">Complex Life</button>
+  <button class="nav-btn" onclick="setView(5)">Humans</button>
+</div>
+<div id="tooltip"><div id="tt-name"></div><div id="tt-t"></div></div>
+<div id="help">scroll to zoom &middot; drag to pan &middot; click any node &middot; use presets for key scales</div>
+<script>
+var EVENTS = [{"id": "quark_plasma", "name": "Quark-Gluon Plasma", "cat": "cosmic", "lane": 0, "t_gyr": 3.17e-23, "t_label": "10^-6 sec after Big Bang", "desc": "The universe is a trillion-degree plasma of quarks, gluons and leptons. No protons exist yet. Temperature: 10 trillion K. The strong and electroweak forces are distinct but gravity, strong and electroweak are not yet unified."}, {"id": "protons_form", "name": "Protons and Neutrons Form", "cat": "cosmic", "lane": 0, "t_gyr": 3.17e-17, "t_label": "1 second after Big Bang", "desc": "As the universe cools below 10^13 K, quarks become confined into protons and neutrons. The universe is now a hot plasma of protons, neutrons, electrons and photons in thermal equilibrium. For every billion antiprotons, there are a billion and one protons."}, {"id": "bbn", "name": "Big Bang Nucleosynthesis", "cat": "cosmic", "lane": 0, "t_gyr": 1.9e-15, "t_label": "3-20 minutes after Big Bang", "desc": "Between 3 and 20 minutes after the Big Bang, protons and neutrons fuse into light nuclei: 75% hydrogen, 25% helium-4, trace deuterium and lithium-7. The universe then cools too much for fusion. All heavier elements must wait for stars."}, {"id": "cmb", "name": "Cosmic Microwave Background Released", "cat": "cosmic", "lane": 0, "t_gyr": 0.00038, "t_label": "380,000 years after Big Bang", "desc": "The universe cools to 3000 K. Electrons combine with nuclei, making the universe transparent to light for the first time. The photons released at this moment are the Cosmic Microwave Background we observe today, carrying an imprint of density fluctuations that seeded all future structure."}, {"id": "dark_ages", "name": "Cosmic Dark Ages", "cat": "stellar", "lane": 1, "t_gyr": 0.003, "t_label": "~3 million years after Big Bang", "desc": "No stars exist. The universe is filled with neutral hydrogen and helium gas, slowly condensing under gravity. Complete darkness for hundreds of millions of years. The only light is the fading infrared glow of the cooling universe."}, {"id": "first_stars", "name": "First Stars Ignite (Population III)", "cat": "stellar", "lane": 1, "t_gyr": 0.2, "t_label": "200 million years after Big Bang", "desc": "The first stars ignite roughly 200 million years after the Big Bang. They are enormous, metal-free giants of 100-300 solar masses, burning for only a few million years before exploding as supernovae. Their explosions seed the universe with the first heavy elements and create the first black holes."}, {"id": "first_bh", "name": "First Stellar Black Holes", "cat": "stellar", "lane": 0, "t_gyr": 0.25, "t_label": "250 million years after Big Bang", "desc": "The most massive Population III stars collapse directly into black holes of 10-100 solar masses. Some grow rapidly by accreting surrounding gas, becoming the seeds of the supermassive black holes found at the centers of most galaxies today. Some merge in events LIGO would detect billions of years later."}, {"id": "first_galaxies", "name": "First Galaxies Form", "cat": "stellar", "lane": 1, "t_gyr": 0.4, "t_label": "400 million years after Big Bang", "desc": "Small protogalaxies assemble from gas and dark matter. JWST has observed galaxy candidates within 300 million years of the Big Bang, earlier than models predicted, suggesting the universe built structure faster than expected. These early galaxies are compact, irregular, and forming stars at a furious rate."}, {"id": "reionization", "name": "Cosmic Reionization Ends", "cat": "cosmic", "lane": 0, "t_gyr": 0.9, "t_label": "900 million years after Big Bang", "desc": "Ultraviolet radiation from the first stars and quasars reionizes the neutral hydrogen that had filled the universe since recombination. The cosmic dark ages end permanently. The universe becomes transparent to UV light. This era is called the Epoch of Reionization."}, {"id": "first_neutron_stars", "name": "First Neutron Stars and Pulsars", "cat": "stellar", "lane": 2, "t_gyr": 0.3, "t_label": "300 million years after Big Bang", "desc": "Supernovae from the first massive stars leave behind neutron stars, objects the mass of the Sun compressed to the size of a city. Rapidly rotating neutron stars emit beams of radio waves as pulsars. Colliding neutron stars forge gold, platinum and uranium in kilonovae, seeding the universe with heavy elements."}, {"id": "milkyway_seed", "name": "Milky Way Begins Forming", "cat": "galactic", "lane": 1, "t_gyr": 1.5, "t_label": "1.5 billion years after Big Bang", "desc": "The protogalactic cloud that will become the Milky Way begins to collapse and form the first stars of what will be our galaxy's ancient halo. The galaxy grows hierarchically through mergers and accretion over billions of years. Ancient metal-poor stars in the galactic halo date to this period."}, {"id": "sgr_a", "name": "Milky Way Central Black Hole Grows", "cat": "galactic", "lane": 0, "t_gyr": 2.0, "t_label": "2 billion years after Big Bang", "desc": "The Milky Way's central supermassive black hole, Sagittarius A*, accumulates mass through accretion and mergers. Today it is 4 million solar masses. When young and actively accreting, it was likely an active quasar briefly illuminating its surroundings before consuming most nearby gas."}, {"id": "milkyway_disk", "name": "Milky Way Disk Settles", "cat": "galactic", "lane": 1, "t_gyr": 5.8, "t_label": "5.8 billion years after Big Bang", "desc": "The Milky Way thin disk, where our solar system lives, forms and settles into its current spiral structure. Four major spiral arms take shape: Perseus, Orion, Sagittarius, and Norma-Cygnus. The Orion Arm, a minor spur, is where the Sun will eventually form. One disk rotation takes ~225 million years."}, {"id": "pillars", "name": "Pillars of Creation Begin Forming", "cat": "stellar", "lane": 2, "t_gyr": 13.7935, "t_label": "6.5 million years ago", "desc": "The towering columns of gas and dust in the Eagle Nebula (M16), 6,500 light-years away, are actively forming stars today. The light we see left them 6,500 years ago. New infrared observations by JWST show warm dust heated by newly forming protostars within the pillars."}, {"id": "sun_forms", "name": "The Sun Ignites", "cat": "solar", "lane": 2, "t_gyr": 9.2, "t_label": "4.6 billion years ago", "desc": "A dense molecular cloud in the Orion Arm of the Milky Way collapses under gravity 4.6 billion years ago. The central mass ignites hydrogen fusion, becoming our Sun. The surrounding protoplanetary disk, containing all the heavy elements forged in billions of years of stellar nucleosynthesis, will form the planets."}, {"id": "planets_form", "name": "Solar System Planets Form", "cat": "solar", "lane": 2, "t_gyr": 9.25, "t_label": "4.55 billion years ago", "desc": "Within the first 100 million years, dust grains in the protoplanetary disk clump into planetesimals, then into protoplanets. The giant planets form quickly, sweeping up gas before it disperses. The inner rocky planets form more slowly through collisions of rocky planetesimals. Jupiter and Saturn reshape the entire system."}, {"id": "earth_forms", "name": "Earth Forms", "cat": "solar", "lane": 3, "t_gyr": 9.35, "t_label": "4.5 billion years ago", "desc": "A molten proto-Earth accretes from planetesimals in the inner solar system over roughly 10-20 million years. The young Earth is bombarded by asteroids and comets, with its surface a global magma ocean. Cometary impacts may deliver much of Earth's water and organic molecules."}, {"id": "moon_impact", "name": "Theia Impact - Moon Forms", "cat": "solar", "lane": 3, "t_gyr": 9.38, "t_label": "4.45 billion years ago", "desc": "A Mars-sized body called Theia strikes the proto-Earth at a grazing angle. The catastrophic collision ejects a disk of molten debris that coalesces into the Moon within thousands of years. The Moon stabilizes Earth's axial tilt (making climate stable), slows Earth's rotation, and creates tidal forces that may have accelerated chemistry in tidal pools."}, {"id": "lhb", "name": "Late Heavy Bombardment", "cat": "solar", "lane": 2, "t_gyr": 9.7, "t_label": "4.1-3.8 billion years ago", "desc": "The inner solar system experiences an intense period of asteroid impacts 4.1-3.8 billion years ago, possibly triggered by gravitational instability among the giant planets. Lunar craters from this era dominate the Moon's surface. Whether this was a distinct spike or the tail of accretion remains debated."}, {"id": "oceans", "name": "Stable Liquid Oceans", "cat": "planetary", "lane": 3, "t_gyr": 9.4, "t_label": "4.4 billion years ago", "desc": "Zircon crystals from Jack Hills, Australia, dated to 4.4 billion years ago, show signatures of liquid water at Earth's surface - earlier than once thought. Stable liquid water oceans are established, providing the medium for chemistry. Earth lies in the habitable zone, its temperature regulated by the carbon cycle and plate tectonics."}, {"id": "first_life", "name": "First Signs of Life", "cat": "life", "lane": 3, "t_gyr": 10.0, "t_label": "3.8 billion years ago", "desc": "Carbon isotope signatures in 3.8 billion year old rocks from Greenland suggest biological fractionation. The exact setting for the origin of life - hydrothermal vents, tidal pools, or ice - remains unknown. The jump from chemistry to self-replicating molecules with heritable variation is the deepest unsolved problem in science."}, {"id": "prokaryotes", "name": "Earliest Microfossils", "cat": "life", "lane": 3, "t_gyr": 10.3, "t_label": "3.5 billion years ago", "desc": "Stromatolites, layered structures built by cyanobacteria, are among the earliest clear fossil evidence of life at 3.5 billion years. Prokaryotes dominate Earth for the next two billion years, driving all major biogeochemical cycles. They are the most metabolically diverse organisms that have ever lived."}, {"id": "goe", "name": "Great Oxidation Event", "cat": "planetary", "lane": 2, "t_gyr": 11.4, "t_label": "2.4 billion years ago", "desc": "Photosynthetic cyanobacteria pump free oxygen into the atmosphere 2.4 billion years ago. Initially catastrophic for anaerobic life, this transforms the atmosphere permanently. Banded iron formations record the global chemical transition. Oxygen eventually enables the high-energy aerobic metabolism that makes complex animal life possible."}, {"id": "eukaryotes", "name": "First Eukaryotic Cells", "cat": "life", "lane": 3, "t_gyr": 11.8, "t_label": "2.0 billion years ago", "desc": "A prokaryote engulfs another bacterium and keeps it alive as a symbiont, creating the first mitochondrion. This endosymbiosis event happened essentially once. All animals, plants, fungi and protists descend from it. Cells with nuclei and organelles can grow much larger and more complex, enabling all subsequent life."}, {"id": "multicell", "name": "First Multicellular Life", "cat": "life", "lane": 3, "t_gyr": 13.0, "t_label": "800 million years ago", "desc": "Cells begin cooperating, differentiating into specialized types, sacrificing individual reproduction. The Ediacaran fauna (635-538 Mya) are the first complex multicellular organisms. Soft-bodied creatures of forms unlike anything alive today. The conditions that triggered multicellularity - rising oxygen, snowball Earth episodes - are still studied."}, {"id": "cambrian", "name": "Cambrian Explosion", "cat": "life", "lane": 3, "t_gyr": 13.262, "t_label": "538 million years ago", "desc": "Within roughly 25 million years, most major animal body plans appear in the fossil record. Eyes, shells, bilateral symmetry, predation. An ecological arms race drives rapid diversification. The Burgess Shale and Chengjiang fossils preserve extraordinary records of this explosion of animal form that defines the template for all subsequent animal life."}, {"id": "land_life", "name": "Life Colonises Land", "cat": "life", "lane": 3, "t_gyr": 13.33, "t_label": "470 million years ago", "desc": "Plants colonise land around 470 Mya, fundamentally transforming atmosphere, climate, and soil. Land vertebrates (tetrapods) emerge around 375 Mya. Forests appear, drawing down atmospheric CO2 and creating the coal deposits that will power human industrialisation hundreds of millions of years later."}, {"id": "dinosaurs", "name": "Dinosaurs Dominate Earth", "cat": "life", "lane": 3, "t_gyr": 13.57, "t_label": "230 million years ago", "desc": "Dinosaurs first appear around 230 Mya and dominate terrestrial ecosystems for 165 million years. Birds are living dinosaurs, the only lineage to survive the end-Cretaceous extinction. Mammals coexist with dinosaurs throughout, mostly small and nocturnal. The diversity and longevity of dinosaurs dwarfs the entirety of human history."}, {"id": "extinction", "name": "Chicxulub Impact", "cat": "solar", "lane": 2, "t_gyr": 13.734, "t_label": "66 million years ago", "desc": "A 10-km asteroid strikes the Yucatan Peninsula 66 million years ago. Wildfires, a decade of darkness from ejecta, and a collapse of photosynthesis cause the extinction of 75% of all species including all non-avian dinosaurs. Mammals radiate rapidly into the ecological void. Without this impact, primates might never have diversified."}, {"id": "primates", "name": "Primates Diversify", "cat": "life", "lane": 3, "t_gyr": 13.745, "t_label": "55 million years ago", "desc": "Primates diversify rapidly following the dinosaur extinction. By 55 Mya, early primates are widespread across the northern continents. Apes appear around 25 Mya. The human lineage diverges from chimpanzees approximately 7 million years ago in Africa. Bipedal walking appears by 4 million years ago."}, {"id": "homo_sapiens", "name": "Homo sapiens", "cat": "life", "lane": 3, "t_gyr": 13.7997, "t_label": "300,000 years ago", "desc": "Anatomically modern humans emerge in Africa approximately 300,000 years ago. All of recorded human history - every civilisation, every war, every work of art, every scientific discovery - fits into the last 5,000 years. That is 1.7% of the time humans have existed, and 0.000036% of the age of the universe."}];
+var CAT_COLORS = {"cosmic": "#4a88ff", "stellar": "#ffaa44", "galactic": "#cc8822", "solar": "#44cc70", "planetary": "#40b8c0", "life": "#e06080"};
+var LANE_LABELS = ["Cosmic / Physical", "Stellar / Galactic", "Solar / Planetary", "Life"];
+var LANE_COLORS = ["#4a88ff", "#ffaa44", "#44cc70", "#e06080"];
+
+var VIEWS = [
+  {name:"Full Universe",  logMin:-13.5, logMax:10.16, label:"13.8 billion years"},
+  {name:"Galaxy Era",     logMin:7.8,   logMax:10.16, label:"12.5 billion years"},
+  {name:"Solar System",   logMin:9.85,  logMax:10.16, label:"2 billion years"},
+  {name:"Life",           logMin:9.97,  logMax:10.16, label:"900 million years"},
+  {name:"Complex Life",   logMin:10.09, logMax:10.16, label:"200 million years"},
+  {name:"Humans",         logMin:10.13, logMax:10.16, label:"3 million years"},
+];
+var currentView = 0;
+
+// View state (animated)
+var view = {logMin:-13.5, logMax:10.16};
+var target = {logMin:-13.5, logMax:10.16};
+
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var W, H;
+var PANEL_W = 280;
+var PAD_LEFT = 130, PAD_RIGHT = 30, PAD_TOP = 55, PAD_BOT = 80;
+
+var isDrag = false, dragStartX = 0, dragStartLogMin, dragStartLogMax;
+var hoverEvent = null;
+var selectedEvent = null;
+
+function resize(){
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function setView(idx){
+  currentView = idx;
+  var v = VIEWS[idx];
+  target.logMin = v.logMin;
+  target.logMax = v.logMax;
+  document.querySelectorAll('.nav-btn').forEach(function(b,i){b.classList.toggle('active',i===idx);});
+}
+
+function logToX(logT){
+  var aw = W - PANEL_W - PAD_LEFT - PAD_RIGHT;
+  return PAD_LEFT + ((logT - view.logMin)/(view.logMax - view.logMin)) * aw;
+}
+
+function xToLog(x){
+  var aw = W - PANEL_W - PAD_LEFT - PAD_RIGHT;
+  return view.logMin + ((x - PAD_LEFT)/aw)*(view.logMax - view.logMin);
+}
+
+function laneY(lane){
+  var usable = H - PAD_TOP - PAD_BOT;
+  var laneH = usable / 4;
+  return PAD_TOP + lane * laneH + laneH * 0.5;
+}
+
+function laneH(){
+  return (H - PAD_TOP - PAD_BOT) / 4;
+}
+
+function eventLogT(e){
+  var yr = e.t_gyr * 1e9;
+  return Math.log10(Math.max(yr, 1e-14));
+}
+
+function eventVisible(e){
+  var lt = eventLogT(e);
+  return lt >= view.logMin - 0.2 && lt <= view.logMax + 0.2;
+}
+
+function eventRadius(e){
+  return 5;
+}
+
+function drawBackground(){
+  ctx.fillStyle = '#030507';
+  ctx.fillRect(0,0,W,H);
+
+  // Lane backgrounds
+  for(var i=0;i<4;i++){
+    var y0 = PAD_TOP + i*(H-PAD_TOP-PAD_BOT)/4;
+    var y1 = y0 + (H-PAD_TOP-PAD_BOT)/4;
+    ctx.fillStyle = i%2===0 ? 'rgba(255,255,255,0.008)' : 'rgba(0,0,0,0)';
+    ctx.fillRect(0, y0, W-PANEL_W, y1-y0);
+    // Lane label
+    ctx.save();
+    ctx.font = '500 8px '+'"IBM Plex Mono", monospace';
+    ctx.fillStyle = LANE_COLORS[i]+'44';
+    ctx.textAlign = 'left';
+    ctx.letterSpacing = '0.1em';
+    ctx.fillText(LANE_LABELS[i].toUpperCase(), 8, (y0+y1)/2+3);
+    ctx.restore();
+  }
+}
+
+function drawAxis(){
+  var y = H - PAD_BOT + 20;
+  var aw = W - PANEL_W - PAD_LEFT - PAD_RIGHT;
+
+  // Axis line
+  ctx.strokeStyle = 'rgba(100,130,180,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD_LEFT, y);
+  ctx.lineTo(PAD_LEFT + aw, y);
+  ctx.stroke();
+
+  // Log ticks
+  var tickLogRange = view.logMax - view.logMin;
+  var step = tickLogRange < 3 ? 0.5 : tickLogRange < 8 ? 1 : tickLogRange < 16 ? 2 : 4;
+
+  var startTick = Math.ceil(view.logMin / step) * step;
+  for(var lt = startTick; lt <= view.logMax + 0.01; lt += step){
+    var x = logToX(lt);
+    if(x < PAD_LEFT - 5 || x > PAD_LEFT + aw + 5) continue;
+    ctx.strokeStyle = 'rgba(100,130,180,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, PAD_TOP);
+    ctx.lineTo(x, H - PAD_BOT + 25);
+    ctx.stroke();
+    ctx.font = '300 8px "IBM Plex Mono",monospace';
+    ctx.fillStyle = 'rgba(100,130,180,0.4)';
+    ctx.textAlign = 'center';
+    var label = logTickLabel(lt);
+    ctx.fillText(label, x, y + 16);
+  }
+
+  // NOW marker
+  var nowX = logToX(10.14);
+  if(nowX >= PAD_LEFT && nowX <= PAD_LEFT + aw){
+    ctx.strokeStyle = 'rgba(255,100,80,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3,4]);
+    ctx.beginPath();
+    ctx.moveTo(nowX, PAD_TOP);
+    ctx.lineTo(nowX, H - PAD_BOT + 25);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,100,80,0.7)';
+    ctx.font = '400 8px "IBM Plex Mono",monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('NOW', nowX, PAD_TOP - 8);
+  }
+}
+
+function logTickLabel(lt){
+  if(lt >= 9) {
+    var gyr = Math.pow(10, lt) / 1e9;
+    if(gyr >= 1) return gyr.toFixed(gyr<10?1:0)+' Gyr';
+    return (gyr*1000).toFixed(0)+' Myr';
+  }
+  if(lt >= 6) return (Math.pow(10,lt)/1e6).toFixed(0)+' Myr';
+  if(lt >= 3) return Math.round(Math.pow(10,lt)/1e3)+'kyr';
+  if(lt >= 0) return Math.round(Math.pow(10,lt))+'yr';
+  if(lt >= -5) return '10^'+lt+'yr';
+  var sec = Math.pow(10,lt) * 3.156e7;
+  if(sec >= 1) return Math.round(sec)+'s';
+  if(sec >= 1e-6) return (sec*1e6).toFixed(0)+'μs';
+  return '10^'+Math.round(lt*3+7.5/1)+'s';
+}
+
+function drawEvents(t){
+  EVENTS.forEach(function(e){
+    if(!eventVisible(e)) return;
+    var lt = eventLogT(e);
+    var x = logToX(lt);
+    var y = laneY(e.lane);
+    var r = eventRadius(e);
+    var col = CAT_COLORS[e.cat] || '#8899aa';
+    var isHover = hoverEvent && hoverEvent.id === e.id;
+    var isSel = selectedEvent && selectedEvent.id === e.id;
+
+    // Vertical stem to axis
+    var axisY = H - PAD_BOT + 20;
+    ctx.strokeStyle = col + '22';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y + r);
+    ctx.lineTo(x, axisY);
+    ctx.stroke();
+
+    // Glow
+    if(isHover || isSel){
+      var grd = ctx.createRadialGradient(x,y,0,x,y,r*3.5);
+      grd.addColorStop(0, col+'60');
+      grd.addColorStop(1, col+'00');
+      ctx.beginPath();
+      ctx.arc(x,y,r*3.5,0,Math.PI*2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+    }
+
+    // Pulse animation for hover
+    if(isHover){
+      var pr = r + 3 + Math.sin(t*0.004)*2;
+      ctx.beginPath();
+      ctx.arc(x,y,pr,0,Math.PI*2);
+      ctx.strokeStyle = col+'55';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Main dot
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle = isSel ? col : isHover ? col+'dd' : col+'99';
+    ctx.fill();
+
+    if(isSel){
+      ctx.beginPath();
+      ctx.arc(x,y,r+2,0,Math.PI*2);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // Label - only if not too crowded
+    var logRange = view.logMax - view.logMin;
+    var showLabel = logRange < 5 || isHover || isSel;
+    if(showLabel){
+      var lx = x;
+      var ly = y - r - 8;
+      var labelStr = e.name;
+      if(labelStr.length > 24) labelStr = labelStr.substring(0,22)+'..';
+      ctx.font = (isSel?'500':'300')+' 8.5px "IBM Plex Mono",monospace';
+      ctx.textAlign = 'center';
+      var tw = ctx.measureText(labelStr).width;
+      // bg
+      ctx.fillStyle = 'rgba(3,5,7,0.75)';
+      ctx.fillRect(lx - tw/2 - 3, ly - 10, tw + 6, 13);
+      ctx.fillStyle = isSel ? col : col+'cc';
+      ctx.fillText(labelStr, lx, ly);
+    }
+  });
+}
+
+function drawScalePerspective(){
+  var aw = W - PANEL_W - PAD_LEFT - PAD_RIGHT;
+  var fullRange = 10.16 - (-13.5);
+  var solar = 10.16 - 9.96; // solar system era
+  var life =  10.16 - 10.00;// life
+  var human = 10.16 - 10.137;// humans
+
+  var pxFull  = aw;
+  var pxSolar = (solar/fullRange)*aw;
+  var pxLife  = (life/fullRange)*aw;
+  var pxHuman = (human/fullRange)*aw;
+
+  var barY = H - PAD_BOT + 42;
+  var barH = 6;
+
+  // Full bar
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(PAD_LEFT, barY, aw, barH);
+
+  // Annotate solar
+  if(pxSolar > 1){
+    ctx.fillStyle = '#44cc7055';
+    ctx.fillRect(PAD_LEFT + aw - pxSolar, barY, pxSolar, barH);
+  }
+  if(pxLife > 0.5){
+    ctx.fillStyle = '#e0608088';
+    ctx.fillRect(PAD_LEFT + aw - pxLife, barY, Math.max(pxLife,1), barH);
+  }
+
+  ctx.font = '300 7.5px "IBM Plex Mono",monospace';
+  ctx.fillStyle = 'rgba(100,130,180,0.35)';
+  ctx.textAlign = 'left';
+  ctx.fillText('Solar system: '+(pxSolar<1?'<1':pxSolar.toFixed(1))+'px  |  All life: '+(pxLife<1?'<1':pxLife.toFixed(1))+'px  |  Humans: '+(pxHuman<0.01?'<0.01':pxHuman.toFixed(3))+'px  (at current width of '+Math.round(aw)+'px)', PAD_LEFT, barY + barH + 13);
+}
+
+// Hit detection
+function findEventAt(mx, my){
+  var best = null, bestD = 14;
+  EVENTS.forEach(function(e){
+    if(!eventVisible(e)) return;
+    var x = logToX(eventLogT(e));
+    var y = laneY(e.lane);
+    var d = Math.sqrt((mx-x)*(mx-x)+(my-y)*(my-y));
+    if(d < bestD){ bestD=d; best=e; }
+  });
+  return best;
+}
+
+function formatT(t_gyr){
+  var yr = t_gyr * 1e9;
+  var bb_gyr = t_gyr;
+  var ago_gyr = 13.8 - t_gyr;
+  if(ago_gyr < 0.001) return (ago_gyr*1e6).toFixed(0)+' thousand years ago';
+  if(ago_gyr < 1) return (ago_gyr*1000).toFixed(0)+' million years ago';
+  return ago_gyr.toFixed(2)+' billion years ago';
+}
+
+function scaleText(t_gyr){
+  var frac = t_gyr / 13.8;
+  var pct = (frac*100).toFixed(4);
+  var sinceStr = formatT(t_gyr);
+  var humanFrac = 0.0000217; // 300kyr / 13.8Gyr
+  var earthFrac = 4.5/13.8;
+  if(t_gyr > 13.799) return 'This event is within the last 10,000 years. All of recorded human civilisation. 0.000072% of the age of the universe.';
+  if(t_gyr > 13.79)  return 'This event occurred '+sinceStr+'. Homo sapiens have existed for only '+(humanFrac*100).toFixed(5)+'% of cosmic history.';
+  if(t_gyr > 9)      return 'This event occurred '+sinceStr+'. Earth itself did not yet exist for '+(100-earthFrac*100).toFixed(0)+'% of cosmic history before this.';
+  if(t_gyr > 1)      return 'This event occurred '+sinceStr+', when the universe was already '+(t_gyr/13.8*100).toFixed(1)+'% of its current age.';
+  return 'This event occurred '+sinceStr+'. The universe was only '+(t_gyr/13.8*100).toFixed(3)+'% of its current age.';
+}
+
+function selectEvent(e){
+  selectedEvent = e;
+  document.getElementById('insp-idle').style.display = 'none';
+  document.getElementById('insp-content').style.display = 'block';
+  var col = CAT_COLORS[e.cat] || '#8899aa';
+  var catEl = document.getElementById('insp-cat');
+  catEl.textContent = e.cat.toUpperCase();
+  catEl.style.color = col;
+  document.getElementById('insp-name').textContent = e.name;
+  document.getElementById('insp-t').textContent = e.t_label;
+  document.getElementById('insp-desc').textContent = e.desc;
+  document.getElementById('insp-scale-text').textContent = scaleText(e.t_gyr);
+}
+
+// Controls
+canvas.addEventListener('mousemove',function(ev){
+  var rect = canvas.getBoundingClientRect();
+  var mx = ev.clientX - rect.left;
+  var my = ev.clientY - rect.top;
+
+  if(isDrag){
+    var dx = mx - dragStartX;
+    var aw = W - PANEL_W - PAD_LEFT - PAD_RIGHT;
+    var dLog = -(dx / aw) * (dragStartLogMax - dragStartLogMin);
+    var range = dragStartLogMax - dragStartLogMin;
+    target.logMin = Math.max(-13.6, dragStartLogMin + dLog);
+    target.logMax = Math.min(10.3, target.logMin + range);
+    return;
+  }
+
+  hoverEvent = findEventAt(mx, my);
+  var tip = document.getElementById('tooltip');
+  if(hoverEvent){
+    tip.style.display='block';
+    tip.style.left=(ev.clientX+12)+'px';
+    tip.style.top=(ev.clientY-14)+'px';
+    document.getElementById('tt-name').textContent=hoverEvent.name;
+    document.getElementById('tt-t').textContent=hoverEvent.t_label;
+    canvas.style.cursor='pointer';
+  } else {
+    tip.style.display='none';
+    canvas.style.cursor='default';
+  }
+});
+
+canvas.addEventListener('mousedown',function(ev){
+  isDrag=false;
+  var rect=canvas.getBoundingClientRect();
+  dragStartX=ev.clientX-rect.left;
+  dragStartLogMin=target.logMin;
+  dragStartLogMax=target.logMax;
+  var wasDown=true;
+  canvas.addEventListener('mousemove',function onMove(e2){
+    if(Math.abs(e2.clientX-rect.left-dragStartX)>4) isDrag=true;
+  },{once:true});
+  window.addEventListener('mouseup',function(){wasDown=false;},{once:true});
+  isDrag=true; // track via mouseup
+});
+canvas.addEventListener('mousedown',function(ev){dragStartX=ev.clientX;dragStartLogMin=target.logMin;dragStartLogMax=target.logMax;isDrag=false;});
+window.addEventListener('mouseup',function(){isDrag=false;});
+
+canvas.addEventListener('click',function(ev){
+  if(isDrag) return;
+  var rect=canvas.getBoundingClientRect();
+  var e=findEventAt(ev.clientX-rect.left,ev.clientY-rect.top);
+  if(e) selectEvent(e);
+});
+
+canvas.addEventListener('wheel',function(ev){
+  ev.preventDefault();
+  var rect=canvas.getBoundingClientRect();
+  var mx=ev.clientX-rect.left;
+  var logAtMouse=xToLog(mx);
+  var range=target.logMax-target.logMin;
+  var factor=ev.deltaY>0?1.25:0.8;
+  var newRange=Math.max(0.05,Math.min(24,range*factor));
+  var ratio=(logAtMouse-target.logMin)/range;
+  target.logMin=logAtMouse-ratio*newRange;
+  target.logMax=target.logMin+newRange;
+  target.logMin=Math.max(-13.6,target.logMin);
+  target.logMax=Math.min(10.3,target.logMax);
+},{passive:false});
+
+// Update scale bar
+function updateScaleBar(){
+  var range=view.logMax-view.logMin;
+  var fullRange=10.16-(-13.5);
+  var frac=range/fullRange;
+  var pos=(view.logMin-(-13.5))/fullRange;
+  var nowEl=document.getElementById('scale-now');
+  nowEl.style.width=(frac*100)+'%';
+  nowEl.style.left=(pos*100)+'%';
+
+  var logMid=(view.logMin+view.logMax)/2;
+  var yr=Math.pow(10,logMid)*1;
+  var label;
+  if(range<0.5) label='Zoomed in: '+range.toFixed(2)+' log-decades';
+  else if(range<3) label='Viewing: ~'+range.toFixed(1)+' log-decades of time';
+  else label='Viewing: '+range.toFixed(0)+' log-decades ('+VIEWS[currentView]?VIEWS[currentView].name:'custom view'+')';
+  document.getElementById('scale-text').textContent=VIEWS[currentView]?VIEWS[currentView].label+' span shown':'Custom view';
+}
+
+// Animation
+var T=0;
+function animate(){
+  requestAnimationFrame(animate);
+  T++;
+
+  // Smooth zoom
+  view.logMin+=(target.logMin-view.logMin)*0.1;
+  view.logMax+=(target.logMax-view.logMax)*0.1;
+
+  drawBackground();
+  drawEvents(T);
+  drawAxis();
+  drawScalePerspective();
+  updateScaleBar();
+}
+animate();
+</script>
+</body>
+</html>
