@@ -966,16 +966,308 @@ let isMouseDown = false;
 
 // ── SCENE OBJECTS ──
 
-// Starfield background
-const starGeo = new THREE.BufferGeometry();
-const starCount = 8000;
-const starPos = new Float32Array(starCount * 3);
-for (let i = 0; i < starCount * 3; i++) {
-  starPos[i] = (Math.random() - 0.5) * 2000;
+// ═══════════════════════════════════════════════════════════════════════
+// ██  COSMIC WEB  ██  The large-scale structure of the observable universe
+// ═══════════════════════════════════════════════════════════════════════
+// The universe is NOT a uniform scatter. It is a foam: galaxies lie on
+// the surfaces and edges of vast bubbles (voids). Where filaments meet,
+// galaxy clusters form — the densest nodes. Between them, nearly nothing.
+//
+// We generate this procedurally:
+//   1. Node layer — ~100 superclusters/cluster nodes placed quasi-randomly
+//   2. Filament layer — galaxy strings connecting nearby nodes (the "web")
+//   3. Wall layer — diffuse galaxy sheets around void surfaces
+//   4. Void background — very sparse, faint, isolated galaxies
+//   5. Deep background — extremely distant, redshifted, at the edge
+
+// ── DEEP STARFIELD — ambient texture ──
+// Two layers: near (bright, warm) and far (faint, blue-white)
+function makeStarfield(count, spread, size, color, opacity) {
+  const geo = new THREE.BufferGeometry();
+  const p = new Float32Array(count * 3);
+  const s = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    p[i*3]   = (Math.random()-0.5) * spread;
+    p[i*3+1] = (Math.random()-0.5) * spread;
+    p[i*3+2] = (Math.random()-0.5) * spread;
+    s[i] = size * (0.3 + Math.random() * 0.7);
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  const mat = new THREE.PointsMaterial({ color, size, transparent: true, opacity, sizeAttenuation: true });
+  return new THREE.Points(geo, mat);
 }
-starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.3, transparent: true, opacity: 0.6 });
-scene.add(new THREE.Points(starGeo, starMat));
+scene.add(makeStarfield(15000, 3000, 0.25, 0xaabbdd, 0.4));   // distant, cool
+scene.add(makeStarfield(5000,  1200, 0.45, 0xffeedd, 0.55));   // mid, warm
+scene.add(makeStarfield(2000,  500,  0.6,  0xffffff, 0.7));     // nearby, bright
+
+// ── COSMIC WEB NODE GENERATION ──
+// Seeded RNG for reproducibility
+let _seed = 42;
+function srand() { _seed = (_seed * 16807 + 0) % 2147483647; return (_seed - 1) / 2147483646; }
+
+// Generate web nodes: position + mass
+const WEB_NODES = [];
+const NODE_COUNT = 120;
+for (let i = 0; i < NODE_COUNT; i++) {
+  // Distribute in sphere, slightly denser toward center (selection bias)
+  const r = Math.pow(srand(), 0.45) * 68;
+  const theta = srand() * Math.PI * 2;
+  const phi   = Math.acos(2 * srand() - 1);
+  const x = r * Math.sin(phi) * Math.cos(theta);
+  const y = r * Math.cos(phi) * 0.65; // slightly oblate (realistic — survey selection effects)
+  const z = r * Math.sin(phi) * Math.sin(theta);
+  const mass = 0.3 + srand() * 2.5; // relative mass determines galaxy density
+  WEB_NODES.push({ x, y, z, mass, r });
+}
+
+// ── FILAMENT DETECTION — connect nearby nodes ──
+// Two nodes connected if within a distance threshold (scaled by their masses)
+const FILAMENTS = [];
+const CONNECT_DIST = 25;
+for (let i = 0; i < NODE_COUNT; i++) {
+  for (let j = i+1; j < NODE_COUNT; j++) {
+    const a = WEB_NODES[i], b = WEB_NODES[j];
+    const dx = a.x-b.x, dy = a.y-b.y, dz = a.z-b.z;
+    const dist = Math.sqrt(dx*dx+dy*dy+dz*dz);
+    const threshold = CONNECT_DIST * (0.5 + 0.25 * (a.mass + b.mass));
+    if (dist < threshold && dist > 3) {
+      FILAMENTS.push({ a: i, b: j, dist });
+    }
+  }
+}
+
+// ── GALAXY GENERATION ──
+// Multiple populations with different distributions and visual properties
+
+const allGalPos = [];    // [x, y, z, distFromOrigin, population]
+const allGalColors = []; // [r, g, b]
+
+// Utility: add galaxy
+function addGal(x, y, z, pop) {
+  const dist = Math.sqrt(x*x+y*y+z*z);
+  allGalPos.push(x, y, z);
+
+  // Color scheme: distance-based redshift + population variation
+  const redshift = Math.min(dist / 70, 1);
+
+  // Base color by population
+  let cr, cg, cb;
+  if (pop === 'node') {
+    // Cluster galaxies — warm gold/amber
+    cr = 0.85 + redshift * 0.15;
+    cg = 0.65 - redshift * 0.2;
+    cb = 0.35 - redshift * 0.2;
+  } else if (pop === 'filament') {
+    // Filament galaxies — blue-white shifting to redder with distance
+    cr = 0.45 + redshift * 0.5;
+    cg = 0.50 + redshift * 0.05 - redshift * 0.3;
+    cb = 0.85 - redshift * 0.65;
+  } else if (pop === 'wall') {
+    // Wall/sheet galaxies — cooler blue-purple
+    cr = 0.35 + redshift * 0.55;
+    cg = 0.35 - redshift * 0.15;
+    cb = 0.70 - redshift * 0.5;
+  } else {
+    // Void galaxies — very faint, blue
+    cr = 0.30 + redshift * 0.4;
+    cg = 0.30 - redshift * 0.1;
+    cb = 0.55 - redshift * 0.3;
+  }
+
+  // Add slight random variation
+  cr = Math.max(0, Math.min(1, cr + (srand()-0.5)*0.08));
+  cg = Math.max(0, Math.min(1, cg + (srand()-0.5)*0.06));
+  cb = Math.max(0, Math.min(1, cb + (srand()-0.5)*0.08));
+
+  allGalColors.push(cr, cg, cb);
+}
+
+// ── POPULATION 1: NODE GALAXIES (dense clusters around each web node) ──
+WEB_NODES.forEach(n => {
+  const count = Math.round(20 + n.mass * 40);
+  for (let i = 0; i < count; i++) {
+    // Gaussian-ish distribution around node center
+    const spread = 1.0 + n.mass * 0.8;
+    const dx = (srand()+srand()+srand()-1.5) * spread;
+    const dy = (srand()+srand()+srand()-1.5) * spread * 0.5;
+    const dz = (srand()+srand()+srand()-1.5) * spread;
+    addGal(n.x+dx, n.y+dy, n.z+dz, 'node');
+  }
+});
+
+// ── POPULATION 2: FILAMENT GALAXIES (strings of galaxies between connected nodes) ──
+FILAMENTS.forEach(f => {
+  const a = WEB_NODES[f.a], b = WEB_NODES[f.b];
+  // Number of galaxies proportional to filament length and endpoint masses
+  const count = Math.round(8 + f.dist * 0.5 * (a.mass + b.mass) * 0.4);
+  for (let i = 0; i < count; i++) {
+    const t = srand(); // position along filament [0,1]
+    // Interpolate with slight curve (catenary-like sag)
+    const sag = Math.sin(t * Math.PI) * (srand()-0.5) * f.dist * 0.15;
+    const sagY = Math.sin(t * Math.PI) * (srand()-0.5) * f.dist * 0.08;
+    const perpX = (srand()-0.5) * 1.5; // thickness of filament
+    const perpY = (srand()-0.5) * 0.6;
+    const perpZ = (srand()-0.5) * 1.5;
+    const x = a.x + (b.x-a.x)*t + sag + perpX;
+    const y = a.y + (b.y-a.y)*t + sagY + perpY;
+    const z = a.z + (b.z-a.z)*t + perpZ;
+    addGal(x, y, z, 'filament');
+  }
+});
+
+// ── POPULATION 3: WALL/SHEET GALAXIES (broader, sparser distribution on void surfaces) ──
+// For each pair of non-connected but close-ish nodes, scatter galaxies
+// on the plane between them (simulating void walls)
+for (let i = 0; i < NODE_COUNT; i++) {
+  for (let j = i+1; j < NODE_COUNT; j++) {
+    const a = WEB_NODES[i], b = WEB_NODES[j];
+    const dx = a.x-b.x, dy = a.y-b.y, dz = a.z-b.z;
+    const dist = Math.sqrt(dx*dx+dy*dy+dz*dz);
+    if (dist > 20 && dist < 38 && srand() > 0.55) {
+      const count = Math.round(3 + srand() * 5);
+      for (let k = 0; k < count; k++) {
+        const t = 0.2 + srand() * 0.6;
+        const spread = 4 + srand() * 3;
+        addGal(
+          a.x + (b.x-a.x)*t + (srand()-0.5)*spread,
+          a.y + (b.y-a.y)*t + (srand()-0.5)*spread*0.4,
+          a.z + (b.z-a.z)*t + (srand()-0.5)*spread,
+          'wall'
+        );
+      }
+    }
+  }
+}
+
+// ── POPULATION 4: VOID GALAXIES (very rare, isolated, faint) ──
+for (let i = 0; i < 800; i++) {
+  const r = 8 + srand() * 58;
+  const theta = srand() * Math.PI * 2;
+  const phi = Math.acos(2*srand()-1);
+  const x = r * Math.sin(phi) * Math.cos(theta);
+  const y = r * Math.cos(phi) * 0.6;
+  const z = r * Math.sin(phi) * Math.sin(theta);
+
+  // Only place if far from all nodes (actually in a void)
+  let nearNode = false;
+  for (const n of WEB_NODES) {
+    const d = Math.sqrt((x-n.x)**2+(y-n.y)**2+(z-n.z)**2);
+    if (d < 6 + n.mass * 2) { nearNode = true; break; }
+  }
+  if (!nearNode) addGal(x, y, z, 'void');
+}
+
+// ── POPULATION 5: DEEP BACKGROUND (extremely distant, at the CMB edge) ──
+// These are the most redshifted galaxies, barely detectable, near the
+// edge of the observable universe. Dense shell of faint red points.
+for (let i = 0; i < 4000; i++) {
+  const r = 55 + srand() * 14; // outer shell
+  const theta = srand() * Math.PI * 2;
+  const phi = Math.acos(2*srand()-1);
+  addGal(
+    r * Math.sin(phi) * Math.cos(theta),
+    r * Math.cos(phi) * 0.65,
+    r * Math.sin(phi) * Math.sin(theta),
+    'wall' // use wall color — deep red
+  );
+}
+
+console.log(`Cosmic web: ${allGalPos.length/3} galaxies, ${FILAMENTS.length} filaments, ${NODE_COUNT} nodes`);
+
+// ── BUILD THE THREE.JS POINT CLOUD ──
+const fieldCount = allGalPos.length / 3;
+const fieldPos = new Float32Array(allGalPos);
+const fieldColors = new Float32Array(allGalColors);
+const fieldGeo = new THREE.BufferGeometry();
+fieldGeo.setAttribute('position', new THREE.BufferAttribute(fieldPos, 3));
+fieldGeo.setAttribute('color', new THREE.BufferAttribute(fieldColors, 3));
+const fieldMat = new THREE.PointsMaterial({
+  size: 0.22,
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.72,
+  sizeAttenuation: true
+});
+const fieldPoints = new THREE.Points(fieldGeo, fieldMat);
+cosmicGroup.add(fieldPoints);
+// Keep a pristine copy of original colors for time-based redshift blending
+const fieldColorsBase = new Float32Array(fieldColors);
+
+// ── SUPERCLUSTER GLOW HALOS ──
+// Large, soft, luminous halos around the densest nodes — visible at distance
+// Gives the scene depth and makes the web structure readable
+const glowGroup = new THREE.Group();
+WEB_NODES.forEach(n => {
+  if (n.mass < 1.2) return; // only big clusters get halos
+  const radius = 2.5 + n.mass * 1.8;
+  const geo = new THREE.SphereGeometry(radius, 16, 12);
+  // Color matches distance-based redshift
+  const redshift = Math.min(n.r / 70, 1);
+  const r = 0.25 + redshift * 0.5;
+  const g = 0.35 - redshift * 0.15;
+  const b = 0.7 - redshift * 0.5;
+  const color = new THREE.Color(r, g, b);
+  const mat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.025 + n.mass * 0.012,
+    side: THREE.BackSide
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(n.x, n.y, n.z);
+  glowGroup.add(mesh);
+});
+cosmicGroup.add(glowGroup);
+
+// ── FILAMENT LINES — faint threads connecting web nodes ──
+// Makes the web topology explicitly visible
+const filamentLineGroup = new THREE.Group();
+FILAMENTS.forEach(f => {
+  const a = WEB_NODES[f.a], b = WEB_NODES[f.b];
+  const pts = [];
+  // Slight curve (not perfectly straight — filaments are curved by gravity)
+  const SEGS = 8;
+  for (let s = 0; s <= SEGS; s++) {
+    const t = s / SEGS;
+    const sag = Math.sin(t*Math.PI) * 0.8 * (a.mass+b.mass) * 0.15;
+    pts.push(new THREE.Vector3(
+      a.x + (b.x-a.x)*t + sag * (a.z-b.z)/(f.dist+1) * 0.3,
+      a.y + (b.y-a.y)*t + sag * 0.2,
+      a.z + (b.z-a.z)*t + sag * (b.x-a.x)/(f.dist+1) * 0.3
+    ));
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const alpha = Math.min(0.12, 0.03 + (a.mass+b.mass) * 0.015);
+  const mat = new THREE.LineBasicMaterial({
+    color: 0x5566aa,
+    transparent: true,
+    opacity: alpha
+  });
+  filamentLineGroup.add(new THREE.Line(geo, mat));
+});
+cosmicGroup.add(filamentLineGroup);
+
+// ── CMB GLOW — faint warm glow at the edge of the observable universe ──
+// Represents the cosmic microwave background: the oldest light, maximally redshifted
+const cmbGeo = new THREE.SphereGeometry(69, 48, 32);
+const cmbMat = new THREE.MeshBasicMaterial({
+  color: 0x442200,
+  transparent: true,
+  opacity: 0.018,
+  side: THREE.BackSide
+});
+scene.add(new THREE.Mesh(cmbGeo, cmbMat));
+
+// Second CMB layer — slightly brighter, mottled (anisotropy hint)
+const cmb2Geo = new THREE.SphereGeometry(69.5, 32, 24);
+const cmb2Mat = new THREE.MeshBasicMaterial({
+  color: 0x553311,
+  transparent: true,
+  opacity: 0.012,
+  side: THREE.BackSide,
+  wireframe: true
+});
+scene.add(new THREE.Mesh(cmb2Geo, cmb2Mat));
 
 // Home galaxy (us)
 const homeGeo = new THREE.SphereGeometry(0.5, 8, 8);
@@ -1035,28 +1327,40 @@ clusterData.forEach((c, ci) => {
   cosmicGroup.add(mesh);
   clusterMeshes.push(mesh);
 
-  // Halo
-  const hGeo = new THREE.SphereGeometry(size * 2.5, 12, 12);
-  const hMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.05, side: THREE.BackSide });
+  // Halo — larger and brighter for massive clusters
+  const haloSize = size * (c.mass === 'High' ? 4.0 : 3.0);
+  const hGeo = new THREE.SphereGeometry(haloSize, 14, 14);
+  const hMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: c.mass === 'High' ? 0.08 : 0.04, side: THREE.BackSide });
   const hMesh = new THREE.Mesh(hGeo, hMat);
   hMesh.position.set(x, y, z);
   cosmicGroup.add(hMesh);
 
-  // Galaxy particles around cluster
-  const gCount = Math.min(c.count, 60);
+  // Galaxy particles around cluster — dense swarms
+  const gCount = Math.min(c.count, 200);
   const gGeo = new THREE.BufferGeometry();
   const gPos = new Float32Array(gCount * 3);
+  const gCol = new Float32Array(gCount * 3);
   for (let i = 0; i < gCount; i++) {
-    const spread = size * 3.5;
-    gPos[i*3]   = x + (Math.random()-0.5)*spread;
-    gPos[i*3+1] = y + (Math.random()-0.5)*spread*0.4;
-    gPos[i*3+2] = z + (Math.random()-0.5)*spread;
+    const spread = size * 5.0;
+    // Gaussian-ish falloff from cluster center
+    const dx = ((Math.random()+Math.random()+Math.random())/3 - 0.5) * spread;
+    const dy = ((Math.random()+Math.random()+Math.random())/3 - 0.5) * spread * 0.35;
+    const dz = ((Math.random()+Math.random()+Math.random())/3 - 0.5) * spread;
+    gPos[i*3]   = x + dx;
+    gPos[i*3+1] = y + dy;
+    gPos[i*3+2] = z + dz;
+    // Color: warm near center, cooler at edges
+    const df = Math.sqrt(dx*dx+dy*dy+dz*dz) / spread;
+    gCol[i*3]   = 0.7 + df*0.3;
+    gCol[i*3+1] = 0.5 - df*0.2;
+    gCol[i*3+2] = 0.3 + df*0.3;
   }
   gGeo.setAttribute('position', new THREE.BufferAttribute(gPos, 3));
+  gGeo.setAttribute('color', new THREE.BufferAttribute(gCol, 3));
   const gMat = new THREE.PointsMaterial({
-    color: c.type === 'Supervoid' ? 0x304860 : 0x7788bb,
-    size: 0.2,
-    transparent: true, opacity: 0.7
+    size: c.type === 'Supervoid' ? 0.12 : 0.24,
+    vertexColors: true,
+    transparent: true, opacity: 0.8
   });
   const gPoints = new THREE.Points(gGeo, gMat);
   cosmicGroup.add(gPoints);
@@ -1141,31 +1445,6 @@ homeLabel.className = 'label3d local';
 homeLabel.innerHTML = `<span class="ldot" style="background:#ffd080"></span>MILKY WAY · YOU ARE HERE<span style="color:rgba(100,200,120,0.7);margin-left:3px;font-size:7px">● BOUND</span>`;
 document.body.appendChild(homeLabel);
 labelEls['Milky Way'] = { el: homeLabel, pos: new THREE.Vector3(0, 0.9, 0), bound: true };
-
-// Random field galaxies
-const fieldGeo = new THREE.BufferGeometry();
-const fieldCount = 3000;
-const fieldPos = new Float32Array(fieldCount * 3);
-const fieldColors = new Float32Array(fieldCount * 3);
-for (let i = 0; i < fieldCount; i++) {
-  // Distribute in sphere
-  const r = Math.pow(Math.random(), 0.5) * 70;
-  const theta = Math.random() * Math.PI * 2;
-  const phi = Math.acos(2*Math.random()-1);
-  fieldPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-  fieldPos[i*3+1] = r * Math.cos(phi) * 0.5;
-  fieldPos[i*3+2] = r * Math.sin(phi) * Math.sin(theta);
-  // Color: bluer = closer, redder = farther (cosmological redshift)
-  const redshift = r / 70;
-  fieldColors[i*3]   = 0.4 + redshift * 0.6;
-  fieldColors[i*3+1] = 0.4 - redshift * 0.2;
-  fieldColors[i*3+2] = 0.9 - redshift * 0.7;
-}
-fieldGeo.setAttribute('position', new THREE.BufferAttribute(fieldPos, 3));
-fieldGeo.setAttribute('color', new THREE.BufferAttribute(fieldColors, 3));
-const fieldMat = new THREE.PointsMaterial({ size: 0.18, vertexColors: true, transparent: true, opacity: 0.5 });
-const fieldPoints = new THREE.Points(fieldGeo, fieldMat);
-cosmicGroup.add(fieldPoints);
 
 // ── HORIZON SPHERES ──
 const makeHorizonSphere = (radius, color, opacity, wireframe=false) => {
@@ -1500,7 +1779,8 @@ function createPhoton(targetPos, targetMesh) {
     line, sphere, dir, progress: 0,
     target: targetPos.length(), alive: true,
     trailPoints: [],
-    targetMesh: targetMesh || null   // live reference for steering
+    targetMesh: targetMesh || null,
+    targetBasePos: targetPos.clone() // store original world pos for fallback
   });
   return photonObjects[photonObjects.length-1];
 }
@@ -1864,14 +2144,21 @@ function updateSceneForTime() {
     arrow.cone.material.opacity = alpha;
   });
 
-  // Field galaxy colors — more redshifted at late times
-  const extraRedshift = Math.max(0, (simTime - T_NOW) / 200);
-  for (let i = 0; i < fieldCount; i++) {
-    const baseRed = fieldPos[i*3] ? fieldColors[i*3] : 0.5;
-    fieldColors[i*3] = Math.min(1, baseRed + extraRedshift * 0.5);
-    fieldColors[i*3+2] = Math.max(0, (0.9 - (fieldPos[i*3]/70)*0.7) - extraRedshift * 0.5);
+  // Field galaxy colors — apply temporal redshift from base (non-destructive)
+  const extraRedshift = Math.max(0, (simTime - T_NOW) / 180);
+  if (extraRedshift > 0.001) {
+    for (let i = 0; i < fieldCount; i++) {
+      const i3 = i * 3;
+      fieldColors[i3]   = Math.min(1, fieldColorsBase[i3]   + extraRedshift * 0.45);
+      fieldColors[i3+1] = Math.max(0, fieldColorsBase[i3+1] - extraRedshift * 0.25);
+      fieldColors[i3+2] = Math.max(0, fieldColorsBase[i3+2] - extraRedshift * 0.55);
+    }
+    fieldGeo.attributes.color.needsUpdate = true;
+  } else if (simTime <= T_NOW + 1) {
+    // Reset to base at present day
+    fieldColors.set(fieldColorsBase);
+    fieldGeo.attributes.color.needsUpdate = true;
   }
-  fieldGeo.attributes.color.needsUpdate = true;
 
   // Dark energy field opacity — always update, respects visibility flag
   const deIntensity = Math.max(0, (simTime - T_NOW) / 300);
@@ -1968,12 +2255,12 @@ function updatePhotons(dt) {
       if (p.targetMesh.parent === cosmicGroup) {
         scenePos = p.targetMesh.position.clone().multiplyScalar(cosmicGroup.scale.x);
       } else {
-        // localGroup3D has no scale — scene-local = mesh local
         scenePos = p.targetMesh.position.clone();
       }
-      if (scenePos.length() > 0.5) {
-        p.dir.copy(scenePos.normalize());
-        p.target = scenePos.length(); // distance to cluster RIGHT NOW
+      const sceneDist = scenePos.length();
+      if (sceneDist > 0.5) {
+        p.dir.copy(scenePos).divideScalar(sceneDist); // normalize without mutating scenePos
+        p.target = sceneDist;
       }
     }
 
