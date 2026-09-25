@@ -1,132 +1,75 @@
-# cosmic-truths
+# Cosmic Journey — 13.8 Billion Years Interactive 3D Visualization
 
-Four interactive visualizations that attempt to make the scale, history, and loneliness of the universe *felt* rather than just known.
+A single-file interactive Three.js (r128) visualization of the entire history of the universe, from the Big Bang to the present day.
 
----
+## Quick Start
 
-## Why this exists
+Open `index.html` in any modern browser. No build step, no dependencies to install — Three.js loads from CDN.
 
-There's a difference between knowing the universe is 13.8 billion years old and *feeling* what that means — watching quarks become atoms become stars become you, and understanding that this chain of emergence is the most improbable thing that has ever happened.
+## Controls
 
-There's a difference between knowing the observable universe is 93 billion light-years across and *feeling* the vertigo of drilling down from supercluster filaments to a single pale blue pixel, forty orders of magnitude below where you started.
+- **▶ Begin Journey** — auto-play through 13.8 billion years
+- **🌍 Earth View** — jump to present day, Earth-centered vantage
+- **◀◀ Restart** — reset to Big Bang
+- **Timeline bar** — click/drag to scrub to any era
+- **Mouse drag** — orbit camera
+- **Scroll wheel** — zoom in/out
+- **Click [brackets]** — enter immersive view of any highlighted object
+- **Speed slider** — 1×–10× playback speed
 
-There's a difference between knowing the expansion of space is accelerating and *feeling* what it means that the night sky is slowly going dark — that in 150 billion years, the Local Group will be an island of light in an infinite, empty void, and every other galaxy will have redshifted into nothing.
+## Architecture
 
-These four projects are attempts to close those gaps. They are not textbooks. They are instruments for awe.
+### Single HTML File (~130KB)
+All code is in `index.html`: HTML structure, CSS, and JavaScript in one `<script>` block.
 
----
+### Core Systems
 
-## The four parts
+| System | Description |
+|--------|-------------|
+| `animT` (0→1) | Master timeline parameter driving everything |
+| `SG{}` (Scene Groups) | Each era is an `addSG()` group that fades via `sceneFade()` |
+| `KF_P/KF_C` | 9-keyframe particle system interpolating positions and colors |
+| `CLKB[]` | Clickable object registry with 2D bracket overlay |
+| `cosmicS` | Dynamic cosmic scale factor — objects move outward as universe expands |
+| `oR` | Observable universe sphere radius — tracks content tightly |
+| `camCenter` | Camera orbit center shifts from MW (origin) to solar system |
+| `ensureObjScene()` | Lazy-built immersive scenes for 30+ clickable objects |
 
-### Part 1 — Ladder of Complexity
-**A 3D matrix of emergent complexity across scale, time, and integration.**
-
-Maps the universe's hierarchy of structure — quarks → atoms → molecules → cells → organisms → societies → civilizations — onto three axes:
-
-| Axis | What it measures | Scale |
-|------|-----------------|-------|
-| **x** | Physical scale | Log, femtometers to megaparsecs |
-| **y** | Time of first appearance | Big Bang to present |
-| **z** | Integration | Number of distinct sub-components cooperating |
-
-Each node is a layer of complexity. Each edge is an emergence event — a jump where new properties appear that were not predictable from the layer below. The 3D rotation reveals that these jumps cluster at strange inflection points, not evenly in time or scale. The "complexity frontier" is a curve in this space, and we are on it. Everything beyond it is unknown possibility space.
-
-### Part 2 — Pale Blue Dot
-**A fractal particle simulator spanning 40 orders of magnitude.**
-
-A drill-down level-of-detail system where each click doesn't just zoom — it loads a new universe of things that were invisible before:
-
-```
-Great Attractor → Laniakea Supercluster → Virgo Cluster → Local Group
-→ Milky Way → Orion Arm → Local Bubble → Solar System → Earth-Moon
-```
-
-The honest challenge: the ratio from the Milky Way to the Solar System is 1:10⁹. You cannot represent that at pixel resolution. The approach is to make the ratio *felt* — at supercluster scale, particles are galaxies drifting in dark matter filaments; at solar system scale, they're planets on Keplerian orbits. Same physics engine, completely different universes of structure, separated by nothing but a click.
-
-### Part 3 — The Loneliness Physics
-**A cosmological horizon simulation showing the universe going dark.**
-
-The most emotionally resonant piece. The physics:
-
-- The Hubble constant (~70 km/s/Mpc) means any galaxy beyond ~14 billion light-years is already receding faster than light
-- That horizon is shrinking
-- In ~150 billion years, the Local Group will be the only thing visible
-- Everything else will have redshifted into invisibility
-
-The simulation shows:
-- The observable universe as a sphere with you at center
-- Light cones — what we can see now, what we could theoretically reach, what is already gone forever
-- The Hubble flow — every galaxy receding, the rate accelerating
-- The "cosmic loneliness" trajectory: the shrinking of the observable horizon in real time
-
-The key physical intuition this makes visceral: we're not moving through space away from other galaxies. Space itself is expanding between us. A photon fired at Andromeda today will arrive. A photon fired at a galaxy 20 Mpc away will also arrive, eventually. But a photon fired at anything beyond ~46 billion light-years can never arrive — even traveling at *c* forever — because the space it must cross is growing faster than it can traverse it.
-
-### Part 4 — Cosmic Timeline
-**13.8 billion years as an interactive 3D journey. The one we built.**
-
-A single-file Three.js visualization that plays through every major epoch of cosmic history:
+### Scene Pipeline
 
 ```
-Big Bang → Inflation → QGP → Protons → Nucleosynthesis → CMB → Dark Ages
-→ First Stars → Supernovae → Pulsars → Black Holes → First Galaxies
-→ Quasars → Sgr A* Accretion → Milky Way Formation → Local Group
-→ Orion Arm → Solar Nebula → Sun Ignition → Planets → Earth → Moon
-→ Present Day
+frame() → updateScenes(animT) → updateCamera() → renderer.render() → draw2D() → updateUI()
 ```
 
-Core mechanics:
-- **`animT` (0→1)** drives the entire 13.8 Gyr timeline
-- **Dynamic cosmic expansion**: early content is compact, then physically moves outward as the universe grows, clearing room for the Milky Way to form at the center
-- **Scale transitions**: camera orbits shift from universe scale (camR=350) through galaxy scale (camR=288) to solar system scale (camR=25) to Earth neighbourhood (camR=6)
-- **Nothing disappears**: all 12 scene groups persist to the end — pulsars, black holes, quasars, galaxies all remain visible, spread across the expanded universe
-- **33 clickable events** with 25+ immersive deep-dive scenes (supernova explosions, pulsar jets, BH accretion disks, galaxy collisions, solar system orbits)
-- **12 local group galaxies** in physically motivated positions
+Each frame:
+1. `animT` interpolates toward `targetT`
+2. `updateScenes` sets visibility, runs animFns, computes `cosmicS` and `oR`
+3. Scene groups scale with `cosmicS` (objects move outward)
+4. Camera orbits `camCenter` at radius `defCamR` (interpolated from TL keyframes)
+5. 2D overlay draws brackets, labels, and dynamic legend
 
-See `part4-cosmic-timeline/` for full documentation:
-- `docs/CALCULATIONS.md` — all formulas (oR, cosmicS, gwS, scale ratios)
-- `docs/TIMELINE.md` — 15 eras with aT ranges
-- `docs/EVENTS.md` — 33 events with routing
-- `docs/SCENES.md` — scene architecture + immersive views
-- `docs/REQUIREMENTS.md` — 21-item spec with status
-- `docs/LOCAL_GROUP.md` — galaxy positions and real distances
-
----
-
-## Repo structure
+## File Structure
 
 ```
-cosmic-truths/
-├── README.md                          # This file
-├── part1-ladder-of-complexity/        # 3D complexity matrix
-├── part2-pale-blue-dot/               # Fractal particle drill-down
-├── part3-loneliness-physics/          # Cosmological horizon sim
-└── part4-cosmic-timeline/             # 13.8 Gyr interactive journey
-    ├── index.html                     # The visualization (~130KB, self-contained)
-    ├── README.md                      # Quick start + controls
-    └── docs/
-        ├── CALCULATIONS.md
-        ├── EVENTS.md
-        ├── LOCAL_GROUP.md
-        ├── REQUIREMENTS.md
-        ├── SCENES.md
-        └── TIMELINE.md
+cosmic-journey-repo/
+├── index.html              # Complete visualization (single file)
+├── README.md               # This file
+└── docs/
+    ├── TIMELINE.md          # All 15 eras with aT ranges
+    ├── EVENTS.md            # All 33 events with views
+    ├── CALCULATIONS.md      # Scale math, oR formula, cosmicS
+    ├── SCENES.md            # Scene group architecture
+    ├── IMMERSIVE_VIEWS.md   # All 25+ immersive scene descriptions
+    └── REQUIREMENTS.md      # Original 21-item specification
 ```
 
 ## Technology
 
-All four parts are designed as self-contained browser experiences:
-- **Three.js r128** for 3D rendering (CDN, no install)
-- **Canvas 2D** for overlays, labels, UI
-- **Vanilla JavaScript** — no frameworks, no build tools
-- **Single HTML files** — open in browser, that's it
+- **Three.js r128** (CDN)
+- **Canvas 2D overlay** for labels, brackets, legend
+- **No frameworks** — vanilla JS, no build tools
+- **~130KB** total (uncompressed)
 
-## The thread connecting them
+## License
 
-These four pieces are not separate projects. They are four views of the same truth:
-
-1. **Ladder** asks: *how did simple things become complex things?*
-2. **Pale Blue Dot** asks: *where are we in all of this?*
-3. **Loneliness** asks: *what happens to all of this?*
-4. **Timeline** asks: *what did it look like along the way?*
-
-Together they form a complete arc — from the emergence of structure, through our place in it, to its ultimate fate, told through the specific history that got us here. The universe made atoms, atoms made stars, stars made heavier atoms, heavier atoms made planets, planets made chemistry, chemistry made life, life made minds, and minds made these four visualizations trying to understand the whole chain. That recursion is the point.
+Educational / demonstration project.
